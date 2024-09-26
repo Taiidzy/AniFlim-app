@@ -1,0 +1,1 @@
+const String apiBaseUrl = 'https://aniflim.space/api';  // Пример URL API

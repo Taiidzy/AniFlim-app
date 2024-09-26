@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-
 import '../l10n/app_localizations.dart';
 
 // Функция для показа диалога обновления
 Future<bool> showUpdateDialog(BuildContext context) async {
-  final localizations = AppLocalizations.of(context)!;
+  final localizations = AppLocalizations.of(context);
   return await showDialog<bool>(
     context: context,
     builder: (BuildContext context) {

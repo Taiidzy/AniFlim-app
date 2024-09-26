@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/lists_model.dart';
-import '../models/useruser_model.dart';
+import '../models/user_model.dart';
 
 class UserProvider with ChangeNotifier {
   User? _user;

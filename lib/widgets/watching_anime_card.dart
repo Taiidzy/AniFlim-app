@@ -1,9 +1,7 @@
-// watching_anime_card.dart
 import 'package:flutter/material.dart';
-
 import '../api/anime_api.dart';
 import '../models/anime_model.dart';
-import '../models/lists_modelel.dart';
+import '../models/lists_model.dart';
 
 class WatchingCard extends StatelessWidget {
   final AnimeItem watching;
@@ -14,19 +12,12 @@ class WatchingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        List<Anime> animeList = await AnimeAPI.fetchAnimeList();
-        Anime? selectedAnime = animeList.firstWhere(
+          List<Anime> animeList = await AnimeAPI.fetchAnimeList();
+          Anime? selectedAnime = animeList.firstWhere(
               (anime) => anime.id == watching.anime_id.toString()
-        );
-
-        if (selectedAnime != null) {
-          Navigator.pushNamed(
-            context,
-            '/animeDetail',
-            arguments: selectedAnime,
           );
-        }
-      },
+          Navigator.pushNamed(context, '/animeDetail', arguments: selectedAnime,);
+        },
       child: SizedBox(
         height: 300,
         child: Card(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 import '../api/auth_api.dart';
 import '../l10n/app_localizations.dart';
 
@@ -30,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final login = _loginController.text;
     final password = _passwordController.text;
     final email = _emailController.text;
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
 
     final reg = await AuthAPI.register(login, password, email);
     if (reg == 200) {
@@ -56,7 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.registration),

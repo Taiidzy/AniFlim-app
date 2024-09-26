@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
 import '../l10n/app_localizations.dart';
 import '../models/all_model.dart';
-import '../models/user_modelel.dart';
+import '../models/user_model.dart';
 
 class ProfileMenu extends StatelessWidget {
   final User user;
@@ -13,7 +12,7 @@ class ProfileMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     return Center( // Оборачиваем в Center
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center, // Центрируем содержимое по вертикали

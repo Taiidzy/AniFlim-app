@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
-
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
-import '../providers/theme_providerer.dart';
+import '../providers/theme_provider.dart';
 import '../utils/codecs.dart';
 
 class SettingsScreen extends StatefulWidget {

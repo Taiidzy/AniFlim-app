@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:hugeicons/hugeicons.dart';
 import '../api/lists_api.dart';
 import '../l10n/app_localizations.dart';
 import '../models/lists_model.dart';
@@ -11,7 +11,7 @@ import '../widgets/watching_anime_card.dart';
 class UserLists extends StatefulWidget {
   final String username;
 
-  UserLists({required this.username});
+  const UserLists({super.key, required this.username});
 
   @override
   _UserListsState createState() => _UserListsState();
@@ -40,13 +40,23 @@ class _UserListsState extends State<UserLists> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(localizations.animelists),
+        actions: [
+          IconButton(
+            icon: HugeIcon(icon: HugeIcons.strokeRoundedSettings02, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/settings');
+            },
+          ),
+        ],
       ),
       body: userLists == null
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
           Row(
@@ -59,7 +69,7 @@ class _UserListsState extends State<UserLists> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: isWatchingSelected ? Color(0xFF2A2232) : Color(0xFF1d1b20)
+                      backgroundColor: !isDarkTheme ? isWatchingSelected ? Colors.grey : Colors.white : isWatchingSelected ? const Color(0xFF2A2232) : const Color(0xFF1d1b20)
                   ),
                   child: Text(localizations.watched),
                 ),
@@ -72,7 +82,7 @@ class _UserListsState extends State<UserLists> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: !isWatchingSelected ? Color(0xFF2A2232) : Color(0xFF1d1b20)
+                    backgroundColor: !isDarkTheme ? !isWatchingSelected ? Colors.grey : Colors.white : !isWatchingSelected ? const Color(0xFF2A2232) : const Color(0xFF1d1b20)
                   ),
                   child: Text(localizations.watching),
                 ),
@@ -81,7 +91,7 @@ class _UserListsState extends State<UserLists> {
           ),
           Expanded(
             child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, // Количество столбцов
                 childAspectRatio: 0.65, // Соотношение сторон
               ),
@@ -97,7 +107,7 @@ class _UserListsState extends State<UserLists> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavBar(currentIndex: 2), // Устанавливаем индекс для "My Lists"
+      bottomNavigationBar: const BottomNavBar(currentIndex: 2), // Устанавливаем индекс для "My Lists"
     );
   }
 }

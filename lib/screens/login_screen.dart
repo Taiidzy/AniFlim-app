@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
-
 import '../api/auth_api.dart';
 import '../api/lists_api.dart';
 import '../l10n/app_localizations.dart';
@@ -9,7 +9,7 @@ import '../providers/user_provider.dart';
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
 
-  LoginScreen({required this.onLoginSuccess});
+  const LoginScreen({super.key, required this.onLoginSuccess});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -27,27 +27,21 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future _reg() async {
-    Navigator.pushReplacementNamed(context, '/register');
-  }
-
   Future<void> _login() async {
     final username = _loginController.text;
     final password = _passwordController.text;
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
 
     if (_formKey.currentState?.validate() ?? false) {
       final user = await AuthAPI.login(username, password);
 
       if (user != null) {
-        // Сохраните информацию о пользователе
         Provider.of<UserProvider>(context, listen: false).setUser(user);
-        // Загрузите списки пользователя после входа
         final userLists = await ListsAPI.fetchlists(user.username);
         if (userLists != null) {
           Provider.of<UserProvider>(context, listen: false).setUserLists(userLists);
         }
-        widget.onLoginSuccess(); // Вызов функции при успешном входе
+        widget.onLoginSuccess();
       } else {
         showDialog(
           context: context,
@@ -56,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
             content: Text(localizations.iup),
             actions: [
               TextButton(
-                child: Text('OK'),
+                child: const Text('OK'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -70,56 +64,126 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.logIn),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: HugeIcon( icon: HugeIcons.strokeRoundedArrowLeft02, color: isDarkTheme ? Colors.white : Colors.black, size: 24.0),
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/'); // Вернуться на предыдущий экран
+            Navigator.pushReplacementNamed(context, '/'); // Вернуться на главный экран
           },
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _loginController,
-                decoration: InputDecoration(labelText: localizations.login),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return localizations.enl;
-                  }
-                  return null;
-                },
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.purpleAccent, Colors.blueAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: localizations.password),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return localizations.enp;
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _login,
-                child: Text(localizations.logIn),
-              ),
-              ElevatedButton(
-                onPressed: _reg,
-                child: Text(localizations.register),
-              ),
-            ],
+            ),
           ),
-        ),
+          Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 8,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          localizations.logIn,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _loginController,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.person),
+                                  labelText: localizations.login,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return localizations.enl;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _passwordController,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.lock),
+                                  labelText: localizations.password,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return localizations.enp;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: _login,
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.3,
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  localizations.logIn,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pushReplacementNamed(context, '/register');
+                                },
+                                child: Text(localizations.register),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

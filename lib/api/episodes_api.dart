@@ -6,10 +6,10 @@ import '../models/episodes_model.dart';
 import '../utils/constants.dart';
 
 class EpisodesAPI {
-  static Future<List<Episodes>> fetchAnimeEpisodes(int anime_id) async {
+  static Future<List<Episodes>> fetchAnimeEpisodes(int animeId) async {
     try {
       final response = await http.post(Uri.parse('$apiBaseUrl/anime_data'),
-          body: json.encode({"animeId": anime_id}),
+          body: json.encode({"animeId": animeId}),
           headers: {"Content-Type": "application/json"}
       );
 

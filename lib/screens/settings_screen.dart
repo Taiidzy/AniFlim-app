@@ -7,6 +7,8 @@ import '../providers/theme_provider.dart';
 import '../utils/codecs.dart';
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -34,24 +36,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final localizations = AppLocalizations.of(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: HugeIcon( icon: HugeIcons.strokeRoundedArrowLeft02, color: Colors.grey, size: 24.0, ),
+          icon: HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft02, color: isDarkTheme ? Colors.white : Colors.black, size: 24.0),
           onPressed: () {
             Navigator.pushReplacementNamed(context, '/'); // Вернуться на предыдущий экран
           },
         ),
         title: Text(localizations.settings),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(localizations.style, style: TextStyle(fontSize: 18)),
+            Text(localizations.style, style: const TextStyle(fontSize: 18)),
             SwitchListTile(
               title: Text(localizations.darkTheme),
               value: themeProvider.themeMode == ThemeMode.dark,
@@ -59,8 +61,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 themeProvider.toggleTheme(value);
               },
             ),
-            SizedBox(height: 20),
-            Text(localizations.style, style: TextStyle(fontSize: 18)),
+            const SizedBox(height: 20),
+            Text(localizations.style, style: const TextStyle(fontSize: 18)),
             SwitchListTile(
               title: Text(localizations.autocontinue),
               value: localeProvider.autocontinue,
@@ -68,20 +70,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 localeProvider.setAutocontinue(value);
               },
             ),
-            SizedBox(height: 20),
-            Text(localizations.codecSettings, style: TextStyle(fontSize: 18)),
+            const SizedBox(height: 20),
+            Text(localizations.codecSettings, style: const TextStyle(fontSize: 18)),
             SwitchListTile(
-              title: Text(localizations.enableHEVC, style: TextStyle(fontSize: 12)),
+              title: Text(localizations.enableHEVC, style: const TextStyle(fontSize: 12)),
               value: localeProvider.HEVC,
               onChanged: _isHEVCSupported ? (value) {
                 localeProvider.setHEVC(value);
               } : null, // Заблокировать переключатель, если HEVC не поддерживается
               subtitle: _isHEVCSupported
                   ? null
-                  : Text(localizations.hevcNotSupported, style: TextStyle(color: Colors.red)),
+                  : Text(localizations.hevcNotSupported, style: const TextStyle(color: Colors.red)),
             ),
-            SizedBox(height: 20),
-            Text(localizations.language, style: TextStyle(fontSize: 18)),
+            const SizedBox(height: 20),
+            Text(localizations.language, style: const TextStyle(fontSize: 18)),
             DropdownButton<String>(
               value: localeProvider.locale.languageCode,
               onChanged: (String? newLanguage) {
@@ -89,7 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   localeProvider.setLocale(newLanguage);
                 }
               },
-              items: [
+              items: const [
                 DropdownMenuItem(
                   value: 'en',
                   child: Text('English'),

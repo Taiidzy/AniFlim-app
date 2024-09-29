@@ -6,12 +6,12 @@ import '../api/lists_api.dart';
 import '../l10n/app_localizations.dart';
 import '../models/anime_model.dart';
 import '../providers/user_provider.dart';
-import '../screens/anime_player.dart';
+import '../player/online_player.dart';
 
 class DetailAnime extends StatefulWidget {
   final Anime anime;
 
-  DetailAnime({required this.anime});
+  const DetailAnime({super.key, required this.anime});
 
   @override
   _DetailAnimeState createState() => _DetailAnimeState();
@@ -42,11 +42,9 @@ class _DetailAnimeState extends State<DetailAnime> {
       try {
         final progress = await AnimeAPI.fetchProgress(widget.anime.id, userProvider.user!.username);
         for (var p in progress) {
-          if (p.episode != null && p.time != null) {
-            print('Episode: ${p.episode}, Time: ${p.time}');
-            showEpisodeDialog(context, p.episode.toString(), p.time.toString());
-          }
-        }
+          print('Episode: ${p.episode}, Time: ${p.time}');
+          showEpisodeDialog(context, p.episode.toString(), p.time.toString());
+                }
       } catch (e) {
         print('Failed to load progress: $e');
       }
@@ -58,32 +56,25 @@ class _DetailAnimeState extends State<DetailAnime> {
     final username = userProvider.user?.username;
 
     if (username != null) {
-      final response = await ListsAPI.updateAnimeList(username, widget.anime.id, action);
+      await ListsAPI.updateAnimeList(username, widget.anime.id, action);
 
-      if (response != null) {
-        // Получаем обновленные списки
-        final updatedLists = await ListsAPI.fetchlists(username);
-        if (updatedLists != null) {
-          // Обновляем UserProvider новыми списками
-          userProvider.setUser(userProvider.user, userLists: updatedLists);
+      // Получаем обновленные списки
+      final updatedLists = await ListsAPI.fetchlists(username);
+      if (updatedLists != null) {
+        // Обновляем UserProvider новыми списками
+        userProvider.setUser(userProvider.user, userLists: updatedLists);
 
-          // Обновляем статус аниме
-          _checkAnimeStatus();
-        }
-      } else {
-        // Обработка ошибки
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update list')),
-        );
+        // Обновляем статус аниме
+        _checkAnimeStatus();
       }
-    }
+        }
   }
 
 
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     final userProvider = Provider.of<UserProvider>(context);
 
     // Если пользователь не авторизован, возвращаем только информацию об аниме без кнопок
@@ -91,39 +82,44 @@ class _DetailAnimeState extends State<DetailAnime> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.network('https://aniflim.space/' + widget.anime.img),
-          SizedBox(height: 16.0),
+          Image.network('https://aniflim.space/${widget.anime.img}'),
+          const SizedBox(height: 16.0),
           Text(
             widget.anime.name,
-            style: TextStyle(
+            style: const TextStyle(
                 fontSize: 24.0,
                 fontWeight: FontWeight.bold
             ),
           ),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
+          Text(
+              '${localizations.voiceover}: AniLibria',
+              style: const TextStyle(fontSize: 16.0)
+          ),
+          const SizedBox(height: 16.0),
           Text(
               '${localizations.outin}: ${widget.anime.release_date}',
-              style: TextStyle(fontSize: 16.0)
+              style: const TextStyle(fontSize: 16.0)
           ),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           Text(
               '${localizations.status}: ${widget.anime.status}',
-              style: TextStyle(fontSize: 16.0)
+              style: const TextStyle(fontSize: 16.0)
           ),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           Text(
               '${localizations.studio}: ${widget.anime.studio}',
-              style: TextStyle(fontSize: 16.0)
+              style: const TextStyle(fontSize: 16.0)
           ),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           Text(
               '${localizations.genres}: ${widget.anime.genres}',
-              style: TextStyle(fontSize: 16.0)
+              style: const TextStyle(fontSize: 16.0)
           ),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           Text(
               '${localizations.description}: ${widget.anime.description}',
-              style: TextStyle(fontSize: 16.0)
+              style: const TextStyle(fontSize: 16.0)
           ),
         ],
       );
@@ -133,16 +129,16 @@ class _DetailAnimeState extends State<DetailAnime> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image.network('https://aniflim.space/' + widget.anime.img),
-        SizedBox(height: 16.0),
+        Image.network('https://aniflim.space/${widget.anime.img}'),
+        const SizedBox(height: 16.0),
         Text(
           widget.anime.name,
-          style: TextStyle(
+          style: const TextStyle(
               fontSize: 24.0,
               fontWeight: FontWeight.bold
           ),
         ),
-        SizedBox(height: 16.0),
+        const SizedBox(height: 16.0),
         if (!isWatching && !isWatched)
           ElevatedButton(
             onPressed: () => _updateList('add'),
@@ -163,43 +159,43 @@ class _DetailAnimeState extends State<DetailAnime> {
             onPressed: () => _updateList('watching'),
             child: Text(localizations.watching),
           ),
-        SizedBox(height: 16.0),
+        const SizedBox(height: 16.0),
         Text(
             '${localizations.outin}: ${widget.anime.release_date}',
-            style: TextStyle(fontSize: 16.0)
+            style: const TextStyle(fontSize: 16.0)
         ),
-        SizedBox(height: 16.0),
+        const SizedBox(height: 16.0),
         Text(
             '${localizations.status}: ${widget.anime.status}',
-            style: TextStyle(fontSize: 16.0)
+            style: const TextStyle(fontSize: 16.0)
         ),
-        SizedBox(height: 16.0),
+        const SizedBox(height: 16.0),
         Text(
             '${localizations.studio}: ${widget.anime.studio}',
-            style: TextStyle(fontSize: 16.0)
+            style: const TextStyle(fontSize: 16.0)
         ),
-        SizedBox(height: 16.0),
+        const SizedBox(height: 16.0),
         Text(
             '${localizations.genres}: ${widget.anime.genres}',
-            style: TextStyle(fontSize: 16.0)
+            style: const TextStyle(fontSize: 16.0)
         ),
-        SizedBox(height: 16.0),
+        const SizedBox(height: 16.0),
         Text(
             '${localizations.description}: ${widget.anime.description}',
-            style: TextStyle(fontSize: 16.0)
+            style: const TextStyle(fontSize: 16.0)
         )
       ],
     );
   }
 
   void showEpisodeDialog(BuildContext context, String episode, String time) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
     final formattedEpisodeNumber = episode.padLeft(2, '0'); // 'episode' уже строка
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('${localizations.continueWatching}'),
+          title: Text(localizations.continueWatching),
           content: Text('${localizations.episode}: $episode'),
           actions: [
             TextButton(

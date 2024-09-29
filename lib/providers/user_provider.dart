@@ -11,7 +11,7 @@ class UserProvider with ChangeNotifier {
 
   User? get user => _user;
 
-  UserProvider() {}
+  UserProvider();
 
   // Метод для установки пользователя и списков
   void setUser(User? user, {UserListsModel? userLists}) async {

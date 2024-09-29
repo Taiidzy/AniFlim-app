@@ -6,7 +6,7 @@ import '../models/lists_model.dart';
 class WatchedCard extends StatelessWidget {
   final AnimeItem watched;
 
-  WatchedCard({required this.watched});
+  const WatchedCard({super.key, required this.watched});
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +25,12 @@ class WatchedCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(8.0),
                   topRight: Radius.circular(8.0),
                 ),
                 child: Image.network(
-                  'https://aniflim.space/' + watched.img_path,
+                  'https://aniflim.space/${watched.img_path}',
                   fit: BoxFit.cover,
                   height: 250,
                   width: double.infinity,
@@ -40,7 +40,7 @@ class WatchedCard extends StatelessWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   watched.name,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),

@@ -1,7 +1,5 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-
 import '../models/anime_model.dart';
 import '../models/progress_model.dart';
 import '../utils/constants.dart';

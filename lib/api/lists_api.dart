@@ -31,12 +31,12 @@ class ListsAPI {
     }
   }
 
-  static Future<bool> updateAnimeList(String username, String anime_id, String action) async {
+  static Future<bool> updateAnimeList(String username, String animeId, String action) async {
     try {
       final response = await http.post(
         Uri.parse('$apiBaseUrl/user/update_list'),
         body: json.encode({
-          "anime_id": anime_id,
+          "anime_id": animeId,
           "action": action,
           "username": username,
         }),

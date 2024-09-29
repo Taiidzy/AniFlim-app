@@ -6,7 +6,7 @@ class UpdateAPI {
   // Проверка версии приложения на сервере
   static Future<bool> checkAppVersion(String currentVersion) async {
     var response = await http.post(
-      Uri.parse('$apiBaseUrl/app/chek'),
+      Uri.parse('$apiBaseUrl/app/check'),  // Исправлено на "check"
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'version': currentVersion}),
     );

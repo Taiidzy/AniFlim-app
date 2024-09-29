@@ -1,23 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'l10n/app_localizations.dart';
 import 'models/anime_model.dart';
 import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/user_provider.dart';
-import 'screens/anime_detail_screen.dart';
+import 'screens/anime_online_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/last_anime_screen.dart';
+import 'screens/downloaded_anime_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/user_lists.dart';
 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Инициализация уведомлений
+  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+  final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
   // Создаём инстанс UserProvider и загружаем данные пользователя
   final userProvider = UserProvider();
@@ -30,12 +38,14 @@ void main() async {
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => LocaleProvider()),
       ],
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -45,7 +55,7 @@ class MyApp extends StatelessWidget {
       title: 'AniFlim',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           selectedItemColor: Colors.purple,
           unselectedItemColor: Colors.grey,
           backgroundColor: Colors.white,
@@ -63,7 +73,7 @@ class MyApp extends StatelessWidget {
       ],
       initialRoute: '/',
       routes: {
-        '/': (context) => HomeScreen(),  // Изменённый HomeScreen
+        '/': (context) => const HomeScreen(),  // Изменённый HomeScreen
         '/login': (context) => LoginScreen(onLoginSuccess: () {
           Navigator.pushReplacementNamed(context, '/');
         }),
@@ -78,8 +88,6 @@ class MyApp extends StatelessWidget {
   }
 
   Route? _generateRoute(BuildContext context, RouteSettings settings) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final user = userProvider.user;
     switch (settings.name) {
       case '/animeDetail':
         return _buildAnimeDetailRoute(settings);
@@ -87,10 +95,10 @@ class MyApp extends StatelessWidget {
         return _buildProfileRoute(context);
       case '/lists':
         return _buildUserListsRoute(context);
-      case '/last':
-        return _buildLastRoute(context);
+      case '/downloadedanime':
+        return MaterialPageRoute(builder: (context) => const DownloadedAnimeScreen());
       case '/settings':
-        return MaterialPageRoute(builder: (context) => SettingsScreen());
+        return MaterialPageRoute(builder: (context) => const SettingsScreen());
       default:
         return null;
     }
@@ -99,7 +107,7 @@ class MyApp extends StatelessWidget {
   MaterialPageRoute _buildAnimeDetailRoute(RouteSettings settings) {
     final anime = settings.arguments as Anime;
     return MaterialPageRoute(
-      builder: (context) => AnimeDetailScreen(anime: anime),
+      builder: (context) => AnimeOnlineScreen(anime: anime),
     );
   }
 
@@ -132,20 +140,6 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute(
         builder: (context) => UserLists(username: user.username),
       );
-    } else {
-      return MaterialPageRoute(
-        builder: (context) => LoginScreen(onLoginSuccess: () {
-          Navigator.pushReplacementNamed(context, '/');
-        }),
-      );
-    }
-  }
-
-  MaterialPageRoute _buildLastRoute(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final user = userProvider.user;
-    if (user != null) {
-      return MaterialPageRoute(builder: (context) => LastAnime());
     } else {
       return MaterialPageRoute(
         builder: (context) => LoginScreen(onLoginSuccess: () {

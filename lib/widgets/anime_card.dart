@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-
 import '../models/anime_model.dart';
-import '../screens/anime_detail_screen.dart';
+import '../screens/anime_online_screen.dart';
 
 class AnimeCard extends StatelessWidget {
   final Anime anime;
 
-  AnimeCard({required this.anime});
+  const AnimeCard({super.key, required this.anime});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +14,7 @@ class AnimeCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AnimeDetailScreen(anime: anime),
+            builder: (context) => AnimeOnlineScreen(anime: anime),
           ),
         );
       },
@@ -26,12 +25,12 @@ class AnimeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(8.0),
                   topRight: Radius.circular(8.0),
                 ),
                 child: Image.network(
-                  'https://aniflim.space/' + anime.img,
+                  'https://aniflim.space/${anime.img}',
                   fit: BoxFit.cover,
                   height: 250, // Высота изображения
                   width: double.infinity,
@@ -41,7 +40,7 @@ class AnimeCard extends StatelessWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   anime.name,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),

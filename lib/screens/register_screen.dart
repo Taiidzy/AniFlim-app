@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-
-
+import 'package:hugeicons/hugeicons.dart';
 import '../api/auth_api.dart';
 import '../l10n/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   final VoidCallback onRegisterSuccess;
 
-  RegisterScreen({required this.onRegisterSuccess});
+  const RegisterScreen({super.key, required this.onRegisterSuccess});
 
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -27,7 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _reg() async {
+  Future<void> _register() async {
     final login = _loginController.text;
     final password = _passwordController.text;
     final email = _emailController.text;
@@ -44,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           content: Text(localizations.iupe),
           actions: [
             TextButton(
-              child: Text('OK'),
+              child: const Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -58,62 +57,135 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.registration),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: HugeIcon( icon: HugeIcons.strokeRoundedArrowLeft02, color: isDarkTheme ? Colors.white : Colors.black, size: 24.0),
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/'); // Вернуться на предыдущий экран
+            Navigator.pushReplacementNamed(context, '/'); // Вернуться на главный экран
           },
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _loginController,
-                decoration: InputDecoration(labelText: localizations.login),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return localizations.enl;
-                  }
-                  return null;
-                },
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.purpleAccent, Colors.blueAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: localizations.email),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return localizations.ene;
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: localizations.password),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return localizations.enp;
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: _reg,
-                child: Text(localizations.register),
-              ),
-            ],
+            ),
           ),
-        ),
+          Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 8,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          localizations.registration,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _loginController,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.person),
+                                  labelText: localizations.login,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return localizations.enl;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.email),
+                                  labelText: localizations.email,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return localizations.ene;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _passwordController,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.lock),
+                                  labelText: localizations.password,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return localizations.enp;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: _register,
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.2,
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  localizations.register,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -12,7 +12,7 @@ class AppLocalizations {
 
   static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
-  static Map<String, Map<String, String>> _localizedValues = {
+  static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
       'title': 'AniFlim',
       'settings': 'Settings',
@@ -67,7 +67,13 @@ class AppLocalizations {
       'all_watched': 'All watched',
       'codecSettings': 'Use the HEVC codec',
       'enableHEVC': 'This codec allows you to reduce the consumption of traffic and space on the device when watching and downloading anime',
-      'hevcNotSupported': 'Your device does not support the HEVC codec'
+      'hevcNotSupported': 'Your device does not support the HEVC codec',
+      'voiceover': 'Voiceover',
+      'downloadedanime': 'Downloaded anime',
+      'downloadinganime': 'Downloading Anime...',
+      'downloading': 'Downloading',
+      'canceldownload': 'Cancel the download',
+      'unarchive': 'Unarchive'
     },
     'ru': {
       'title': 'AniFlim',
@@ -115,7 +121,7 @@ class AppLocalizations {
       'iup': 'Неверное имя пользователя или пароль.',
       'rf': 'Ошибка регистрации',
       'iupe': 'Неверное имя пользователя, пароль или адрес электронной почты.',
-      'lastanime': 'Последнее аниме',
+      'lastanime': 'Последние аниме',
       'aua': 'Доступно обновление',
       'nv': 'Новая версия приложения доступна. Хотите обновить?',
       'yes': 'Да',
@@ -123,7 +129,13 @@ class AppLocalizations {
       'all_watched': 'Всего смотрю',
       'codecSettings': 'Использовать кодек HEVC',
       'enableHEVC': 'Данный кодек позволяет снизить потребление трафика и места на устройстве при просмотре и загрузке аниме',
-      'hevcNotSupported': 'Ваше устройство не поддерживает кодек HEVC'
+      'hevcNotSupported': 'Ваше устройство не поддерживает кодек HEVC',
+      'voiceover': 'Озвучка',
+      'downloadedanime': 'Скачанные аниме',
+      'downloadinganime': 'Загрузка аниме...',
+      'downloading': 'Скачивание',
+      'canceldownload': 'Отменить загрузку',
+      'unarchive': 'Разархивирование'
     },
   };
 
@@ -341,6 +353,30 @@ class AppLocalizations {
 
   String get hevcNotSupported {
     return _localizedValues[locale.languageCode]!['hevcNotSupported']!;
+  }
+
+  String get voiceover {
+    return _localizedValues[locale.languageCode]!['voiceover']!;
+  }
+
+  String get downloadedanime {
+    return _localizedValues[locale.languageCode]!['downloadedanime']!;
+  }
+
+  String get downloadinganime {
+    return _localizedValues[locale.languageCode]!['downloadinganime']!;
+  }
+
+  String get downloading {
+    return _localizedValues[locale.languageCode]!['downloading']!;
+  }
+
+  String get canceldownload {
+    return _localizedValues[locale.languageCode]!['canceldownload']!;
+  }
+
+  String get unarchive {
+    return _localizedValues[locale.languageCode]!['unarchive']!;
   }
 }
 

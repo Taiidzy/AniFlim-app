@@ -1,0 +1,127 @@
+import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../api/download_api.dart';
+import '../l10n/app_localizations.dart';
+import '../models/anime_model.dart';
+import '../widgets/detail_anime.dart';
+import '../widgets/episodes_anime_online.dart';
+
+class AnimeOnlineScreen extends StatefulWidget {
+  final Anime anime;
+
+  const AnimeOnlineScreen({super.key, required this.anime});
+
+  @override
+  _AnimeOnlineScreenState createState() => _AnimeOnlineScreenState();
+}
+
+class _AnimeOnlineScreenState extends State<AnimeOnlineScreen> {
+  bool showDetail = true;
+  bool isDownloading = false;
+  bool isDownloaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfDownloaded();  // Проверка на наличие аниме в списке
+  }
+
+  Future<void> _checkIfDownloaded() async {
+    bool result = await isAnimeInList(widget.anime.id);
+    setState(() {
+      isDownloaded = result;
+    });
+  }
+
+  Future<bool> isAnimeInList(String animeId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Получаем список по ключу 'anime_$animeId'
+    List<String>? animeData = prefs.getStringList('anime_$animeId');
+
+    // Если список не пустой и содержит это animeId
+    if (animeData != null && animeData.isNotEmpty && animeData.contains(animeId)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: HugeIcon( icon: HugeIcons.strokeRoundedArrowLeft02, color: isDarkTheme ? Colors.white : Colors.black, size: 24.0),
+          onPressed: () {
+            Navigator.pop(context); // Вернуться на предыдущий экран
+          },
+        ),
+        title: Text(widget.anime.name),
+        actions: [
+          isDownloaded
+              ? const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, color: Color(0xFF7ED321), size: 24.0)
+              : isDownloading
+              ? const CircularProgressIndicator()
+              : IconButton(
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedDownload04,
+              color: isDarkTheme ? Colors.white : Colors.black,
+              size: 22.0,
+            ),
+            onPressed: () async {
+              setState(() {
+                isDownloading = true;
+              });
+              await DownloadAnime.downloadAnime(widget.anime.id, widget.anime.name,context);
+              setState(() {
+                isDownloading = false;
+                isDownloaded = true;
+              }
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      showDetail = true;
+                    });
+                  },
+                  child: Text(localizations.detail),
+                ),
+              ),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      showDetail = false;
+                    });
+                  },
+                  child: Text(localizations.watch),
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: showDetail
+                  ? DetailAnime(anime: widget.anime)
+                  : EpisodesAnime(animeId: widget.anime.id, animename: widget.anime.name), // Передача anime_id
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

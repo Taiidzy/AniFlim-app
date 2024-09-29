@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-
 import '../api/anime_api.dart';
 import '../l10n/app_localizations.dart';
 import '../models/anime_model.dart';
@@ -10,6 +9,8 @@ import '../widgets/anime_card.dart';
 import '../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -21,10 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     fetchAnime();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateUtils.checkForUpdate(context);
-    });
+    UpdateUtils.checkForUpdate(context);
   }
+
 
   Future<void> fetchAnime() async {
     try {
@@ -44,17 +44,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(localizations.home),
         actions: [
           IconButton(
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedSearch02, color: Colors.grey, size: 22.0),
+            icon: HugeIcon(icon: HugeIcons.strokeRoundedSearch02, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
             onPressed: _showSearch,
           ),
           IconButton(
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedSettings02, color: Colors.grey, size: 22.0),
+            icon: HugeIcon(icon: HugeIcons.strokeRoundedSettings02, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
             onPressed: () {
                 Navigator.pushReplacementNamed(context, '/settings');
               },
@@ -62,18 +64,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: animeList.isEmpty
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.65, // Изменено значение
+          childAspectRatio: 0.65,
         ),
         itemCount: animeList.length,
         itemBuilder: (context, index) {
           return AnimeCard(anime: animeList[index]);
         },
       ),
-      bottomNavigationBar: BottomNavBar(currentIndex: 0), // Устанавливаем индекс для "Home"
+      bottomNavigationBar: const BottomNavBar(currentIndex: 0), // Устанавливаем индекс для "Home"
     );
   }
 }
@@ -87,7 +89,7 @@ class AnimeSearchDelegate extends SearchDelegate {
   List<Widget> buildActions(BuildContext context) {
     return [
       IconButton(
-        icon: Icon(Icons.clear),
+        icon: const Icon(Icons.clear),
         onPressed: () {
           query = '';
         },
@@ -98,7 +100,7 @@ class AnimeSearchDelegate extends SearchDelegate {
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
-      icon: Icon(Icons.arrow_back),
+      icon: const Icon(Icons.arrow_back),
       onPressed: () {
         close(context, null);
       },
@@ -111,7 +113,7 @@ class AnimeSearchDelegate extends SearchDelegate {
         .where((anime) => anime.name.toLowerCase().contains(query.toLowerCase()))
         .toList();
     return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.65,
       ),

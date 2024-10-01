@@ -56,6 +56,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: _showSearch,
           ),
           IconButton(
+            icon: HugeIcon(icon: HugeIcons.strokeRoundedNotification03, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/notifications');
+            },
+          ),
+          IconButton(
             icon: HugeIcon(icon: HugeIcons.strokeRoundedSettings02, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
             onPressed: () {
                 Navigator.pushReplacementNamed(context, '/settings');

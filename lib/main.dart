@@ -1,7 +1,11 @@
+import 'package:AniFlim/api/firebase_api.dart';
+import 'package:AniFlim/firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'l10n/app_localizations.dart';
 import 'models/anime_model.dart';
 import 'providers/locale_provider.dart';
@@ -15,11 +19,20 @@ import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/user_lists.dart';
+import 'utils/permisions.dart';
+import 'utils/notifications.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Запрос разрешений
+  await Permision.requestNotificationPermission();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  await FirebaseApi.initNotifications();
 
   // Инициализация уведомлений
   const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -41,6 +54,12 @@ void main() async {
       child: const MyApp(),
     ),
   );
+}
+
+
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Notifications.showNewAnimeNotification(message.data['animeName']);
+  print("Handling a background message: ${message.data}");
 }
 
 class MyApp extends StatelessWidget {

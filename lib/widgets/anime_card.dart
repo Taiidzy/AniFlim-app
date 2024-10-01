@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/anime_model.dart';
 import '../screens/anime_online_screen.dart';
 
@@ -29,11 +30,13 @@ class AnimeCard extends StatelessWidget {
                   topLeft: Radius.circular(8.0),
                   topRight: Radius.circular(8.0),
                 ),
-                child: Image.network(
-                  'https://aniflim.space/${anime.img}',
+                child: CachedNetworkImage(
+                  imageUrl: 'https://aniflim.space/${anime.img}',
                   fit: BoxFit.cover,
                   height: 250, // Высота изображения
                   width: double.infinity,
+                    placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) => const Icon(Icons.error)
                 ),
               ),
               Padding(

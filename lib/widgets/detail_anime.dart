@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../api/anime_api.dart';
 import '../api/lists_api.dart';
 import '../l10n/app_localizations.dart';
@@ -93,7 +92,7 @@ class _DetailAnimeState extends State<DetailAnime> {
           ),
           const SizedBox(height: 16.0),
           Text(
-              '${localizations.voiceover}: AniLibria',
+              '${localizations.voiceover}: ${widget.anime.voiceover}',
               style: const TextStyle(fontSize: 16.0)
           ),
           const SizedBox(height: 16.0),

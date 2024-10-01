@@ -5,10 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:archive/archive.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/locale_provider.dart';
 import '../utils/constants.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import '../main.dart'; // Импортируйте flutterLocalNotificationsPlugin из main.dart
+import '../main.dart';
 
 class DownloadAnime {
   static Future<void> downloadAnime(String animeId, String name, BuildContext context) async {
@@ -16,41 +16,56 @@ class DownloadAnime {
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     bool isHEVCEnabled = localeProvider.HEVC;
 
-    // URL для скачивания аниме с учётом кодека HEVC
     String downloadUrl = '$hevcUrl/anime/download/$animeId';
     if (isHEVCEnabled) {
       downloadUrl = '$hevcUrl/anime/download/$animeId?codec=true';
     }
 
-    // Сохранение архива во временную директорию
     final tempDir = await getTemporaryDirectory();
     final tempPath = '${tempDir.path}/anime_$animeId.zip';
     final file = File(tempPath);
 
     try {
       print('downloadUrl: $downloadUrl');
-      // Скачивание данных с использованием потоков
+
       final request = http.Request('GET', Uri.parse(downloadUrl));
       final response = await request.send();
+
+      // Получаем размер файла из заголовков ответа
+      final totalBytes = response.contentLength ?? 0;
 
       // Открываем поток для записи в файл
       final fileStream = file.openWrite();
 
-      // Отладка: Начало процесса скачивания
-      print('Starting download and saving to $tempPath');
+      // Инициализируем уведомление с прогрессом
+      await showProgressNotification(name, 0, 'Начало загрузки аниме...');
 
+      int lastProgress = 0;
+      int receivedBytes = 0;
       response.stream.listen(
             (chunk) {
+          receivedBytes += chunk.length;
+          int progress = ((receivedBytes / totalBytes) * 100).toInt();
           fileStream.add(chunk);
+
+          if (progress - lastProgress >= 1) {
+            print("Прогресс загрузки аниме: $progress");
+            showProgressNotification(name, progress, 'Загрузка аниме... $progress%');
+            lastProgress = progress;
+          }
         },
         onDone: () async {
           print('Download complete. Extracting archive...');
 
-          // После завершения скачивания — разархивируем
+          await showProgressNotification(name, 100, 'Загрузка завершена. Распаковка...');
+
           final appDir = await getApplicationDocumentsDirectory();
           final animeDir = Directory('${appDir.path}/anime/$animeId/');
           animeDir.createSync(recursive: true);
           final archive = ZipDecoder().decodeBytes(await file.readAsBytes());
+
+          int extractedFiles = 0;
+          final totalFiles = archive.length;
 
           for (final file in archive) {
             if (file.isFile) {
@@ -58,14 +73,18 @@ class DownloadAnime {
               File(filePath)
                 ..createSync(recursive: true)
                 ..writeAsBytesSync(file.content as List<int>);
+
+              // Обновляем прогресс распаковки
+              extractedFiles++;
+              final progress = ((extractedFiles / totalFiles) * 100).toInt();
+              print("Прогресс распаковки аниме: $progress");
+              showProgressNotification(name, progress, 'Распаковка файлов... $progress%');
             }
           }
 
-          // Удаляем архив после разархивирования
           print('Extraction complete, deleting archive.');
           await file.delete();
 
-          // Сохранение данных в SharedPreferences
           prefs.setStringList('anime_$animeId', [
             animeId,
             name,
@@ -73,10 +92,11 @@ class DownloadAnime {
             '${appDir.path}/anime/$animeId'
           ]);
 
-          // Уведомление пользователя о завершении
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Аниме успешно скачено!')),
           );
+
+          // Уведомление о завершении
           await showDownloadCompleteNotification(name);
           print('Anime directory path: ${animeDir.path}');
         },
@@ -119,10 +139,34 @@ class DownloadAnime {
     }
   }
 
+  // Уведомление о прогрессе
+  static Future<void> showProgressNotification(String animeName, int progress, String message) async {
+    final androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'progress_channel',
+      'Прогресс загрузки',
+      channelDescription: 'Уведомление о прогрессе загрузки аниме',
+      importance: Importance.low,
+      priority: Priority.low,
+      showProgress: true,
+      maxProgress: 100,
+      progress: progress,
+    );
+    final platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // ID уведомления
+      'Загрузка аниме "$animeName"', // Заголовок
+      message, // Текст уведомления
+      platformChannelSpecifics,
+      payload: 'progress',
+    );
+  }
+
+  // Уведомление о завершении загрузки
   static Future<void> showDownloadCompleteNotification(String animeName) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'download_channel', // ID канала
-      'Завершение загрузки', // Имя канала
+      'download_channel',
+      'Завершение загрузки',
       importance: Importance.max,
       priority: Priority.high,
       showWhen: false,
@@ -130,9 +174,9 @@ class DownloadAnime {
     const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await flutterLocalNotificationsPlugin.show(
-      0, // ID уведомления
-      'Загрузка завершена', // Заголовок
-      'Аниме "$animeName" успешно загружено.', // Текст уведомления
+      0,
+      'Загрузка завершена',
+      'Аниме "$animeName" успешно загружено.',
       platformChannelSpecifics,
       payload: 'Загрузка завершена',
     );

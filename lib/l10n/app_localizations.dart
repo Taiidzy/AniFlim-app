@@ -73,7 +73,8 @@ class AppLocalizations {
       'downloadinganime': 'Downloading Anime...',
       'downloading': 'Downloading',
       'canceldownload': 'Cancel the download',
-      'unarchive': 'Unarchive'
+      'unarchive': 'Unarchive',
+      'notification': 'Notification',
     },
     'ru': {
       'title': 'AniFlim',
@@ -135,7 +136,8 @@ class AppLocalizations {
       'downloadinganime': 'Загрузка аниме...',
       'downloading': 'Скачивание',
       'canceldownload': 'Отменить загрузку',
-      'unarchive': 'Разархивирование'
+      'unarchive': 'Разархивирование',
+      'notification': 'Уведомления',
     },
   };
 
@@ -377,6 +379,10 @@ class AppLocalizations {
 
   String get unarchive {
     return _localizedValues[locale.languageCode]!['unarchive']!;
+  }
+
+  String get notification {
+    return _localizedValues[locale.languageCode]!['notification']!;
   }
 }
 

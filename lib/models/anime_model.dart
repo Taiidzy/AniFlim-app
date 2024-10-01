@@ -4,6 +4,7 @@ class Anime {
   final String img;
   final int release;
   final String release_date;
+  final String voiceover;
   final String studio;
   final String description;
   final String status;
@@ -15,6 +16,7 @@ class Anime {
     required this.img,
     required this.release,
     required this.release_date,
+    required this.voiceover,
     required this.studio,
     required this.description,
     required this.status,
@@ -29,6 +31,7 @@ class Anime {
       img: json['img'],
       release: json['release'],
       release_date: json['release_date'],
+      voiceover: json['voiceover'],
       studio: json['studio'],
       description: json['description'],
       status: json['status'],

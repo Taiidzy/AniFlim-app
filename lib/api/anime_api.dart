@@ -10,17 +10,12 @@ class AnimeAPI {
     try {
       final response = await http.get(Uri.parse('$apiBaseUrl/home'));
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         final List<dynamic> decodedResponse = json.decode(decodedBody);
-        print('decodedResponse: $decodedResponse');
 
         // Преобразование JSON в объекты Anime
         List<Anime> animeList = decodedResponse.map((json) => Anime.fromJson(json)).toList();
-        print('animeList: $animeList');
 
         // Фильтрация аниме по значению release
         animeList = animeList.where((anime) => anime.release == 1).toList();

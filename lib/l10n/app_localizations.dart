@@ -74,7 +74,7 @@ class AppLocalizations {
       'downloading': 'Downloading',
       'canceldownload': 'Cancel the download',
       'unarchive': 'Unarchive',
-      'notification': 'Notification',
+      'notification': 'Notifications',
     },
     'ru': {
       'title': 'AniFlim',

@@ -342,7 +342,6 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
                                       }
                                       _isPlaying.value = _controller.value.isPlaying;
                                     });
-                                    _togglePlayPause();
                                   },
                                 ),
                                 const SizedBox(width: 20),

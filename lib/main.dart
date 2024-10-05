@@ -19,10 +19,12 @@ import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/user_lists.dart';
+import 'screens/notification_screen.dart';
 import 'utils/permisions.dart';
 import 'utils/notifications.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 
 void main() async {
@@ -44,6 +46,16 @@ void main() async {
   final userProvider = UserProvider();
   await userProvider.loadUserFromPreferences();
 
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    // Используем обработчик для реакции на нажатие уведомления
+    onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) async {
+      if (notificationResponse.payload != null) {
+        _handleNotificationTap(notificationResponse.payload!);
+      }
+    },
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -56,10 +68,27 @@ void main() async {
   );
 }
 
-
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Notifications.showNewAnimeNotification(message.data['animeName']);
+  await Notifications.showNotification(message.data['type'], message.data['text']);
   print("Handling a background message: ${message.data}");
+}
+
+void _handleNotificationTap(String payload) {
+  // Проверяем, что это уведомление от нового аниме
+  if (payload.startsWith('anime_')) {
+    // Получаем animeId, удалив префикс "anime_"
+    String animeId = payload.replaceFirst('anime_', '');
+
+    // Навигация на экран с деталями аниме
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => AnimeOnlineScreen(animeId: animeId),
+      ),
+    );
+  } else {
+    // Обработка других типов уведомлений
+    print('Другое уведомление: $payload');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -71,6 +100,7 @@ class MyApp extends StatelessWidget {
     final localeProvider = Provider.of<LocaleProvider>(context);
 
     return MaterialApp(
+      navigatorKey: navigatorKey, // Устанавливаем ключ навигатора
       title: 'AniFlim',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -92,7 +122,7 @@ class MyApp extends StatelessWidget {
       ],
       initialRoute: '/',
       routes: {
-        '/': (context) => const HomeScreen(),  // Изменённый HomeScreen
+        '/': (context) => const HomeScreen(),
         '/login': (context) => LoginScreen(onLoginSuccess: () {
           Navigator.pushReplacementNamed(context, '/');
         }),
@@ -118,6 +148,8 @@ class MyApp extends StatelessWidget {
         return MaterialPageRoute(builder: (context) => const DownloadedAnimeScreen());
       case '/settings':
         return MaterialPageRoute(builder: (context) => const SettingsScreen());
+      case '/notifications':
+        return MaterialPageRoute(builder: (context) => NotificationsScreen());
       default:
         return null;
     }
@@ -126,7 +158,7 @@ class MyApp extends StatelessWidget {
   MaterialPageRoute _buildAnimeDetailRoute(RouteSettings settings) {
     final anime = settings.arguments as Anime;
     return MaterialPageRoute(
-      builder: (context) => AnimeOnlineScreen(anime: anime),
+      builder: (context) => AnimeOnlineScreen(animeId: anime.id),
     );
   }
 

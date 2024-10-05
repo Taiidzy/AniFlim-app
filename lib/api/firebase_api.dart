@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:developer'; // Для логгирования
+import 'package:AniFlim/utils/constants.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
-// import '../utils/constants.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/standalone.dart' as tz;
 
 class FirebaseApi {
-  static Timer? _timer;
-
   static Future<void> initNotifications() async {
     try {
       final _firebaseMessaging = FirebaseMessaging.instance;
@@ -14,51 +15,66 @@ class FirebaseApi {
 
       final token = await _firebaseMessaging.getToken();
       if (token != null) {
-        print("Token: $token");
+        log("Token received: $token", name: 'FirebaseApi');
         await sendToken(token);
-        _scheduleTokenUpdate(token); // Запланируем обновление токена
+        scheduleDailyTask(); // Запускаем задачу
       } else {
-        print('FCM token is null');
+        log('FCM token is null', name: 'FirebaseApi');
       }
     } catch (e) {
-      print('Failed to initialize notifications: $e');
+      log('Failed to initialize notifications: $e', name: 'FirebaseApi', error: e);
     }
   }
 
   static Future<void> sendToken(String token) async {
     try {
+      log('Sending token to server...', name: 'FirebaseApi');
       final response = await http.post(
-        Uri.parse('http://192.168.0.102:5000/api/notification/token'),
+        Uri.parse('$apiBaseUrl/notification/token'),
         body: jsonEncode({"fcm_token": token}),
         headers: {"Content-Type": "application/json"},
       );
 
       final status = response.statusCode;
       if (status == 200) {
-        print('Token updated successfully');
+        log('Token updated successfully', name: 'FirebaseApi');
       } else if (status == 304) {
-        print('Token already exists');
+        log('Token already exists', name: 'FirebaseApi');
       } else {
-        print('Failed to update token, status code: ${response.statusCode}');
+        log('Failed to update token, status code: ${response.statusCode}', name: 'FirebaseApi');
       }
     } catch (e) {
-      print('Error sending token: $e');
+      log('Error sending token: $e', name: 'FirebaseApi', error: e);
     }
   }
 
-  static void _scheduleTokenUpdate(String token) {
-    DateTime now = DateTime.now().toUtc().add(Duration(hours: 3)); // Переводим в МСК
-    DateTime nextCall = DateTime(now.year, now.month, now.day, 0, 1); // Завтра 00:01
+  // Функция планировщика задач
+  static void scheduleDailyTask() {
+    tz.initializeTimeZones();
+    final moscow = tz.getLocation('Europe/Moscow');
 
-    if (now.isAfter(nextCall)) {
-      nextCall = nextCall.add(Duration(days: 1)); // Если уже после 00:01, назначаем на завтра
+    final now = tz.TZDateTime.now(moscow);
+    final nextRunTime = tz.TZDateTime(moscow, now.year, now.month, now.day, 0, 1);
+
+    // Если текущее время уже больше 00:01, то назначаем задачу на следующий день
+    if (now.isAfter(nextRunTime)) {
+      final nextRunTimeTomorrow = nextRunTime.add(Duration(days: 1));
+      final timeUntilNextRun = nextRunTimeTomorrow.difference(now);
+      log('Scheduling task for tomorrow at 00:01 MSK', name: 'FirebaseApi');
+      Timer(timeUntilNextRun, () => runTaskPeriodically());
+    } else {
+      final timeUntilNextRun = nextRunTime.difference(now);
+      log('Scheduling task for today at 00:01 MSK', name: 'FirebaseApi');
+      Timer(timeUntilNextRun, () => runTaskPeriodically());
     }
+  }
 
-    Duration delay = nextCall.difference(now);
-
-    _timer = Timer(delay, () {
-      sendToken(token); // Вызываем функцию sendToken
-      _scheduleTokenUpdate(token); // Запланируем следующий вызов
+  // Функция для периодического выполнения задачи
+  static void runTaskPeriodically() {
+    log('Starting periodic task every 24 hours', name: 'FirebaseApi');
+    Timer.periodic(Duration(days: 1), (timer) async {
+      log('Executing scheduled task', name: 'FirebaseApi');
+      await initNotifications();
     });
   }
 }

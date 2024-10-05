@@ -15,7 +15,7 @@ class AnimeCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AnimeOnlineScreen(anime: anime),
+            builder: (context) => AnimeOnlineScreen(animeId: anime.id),
           ),
         );
       },

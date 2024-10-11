@@ -1,10 +1,11 @@
 import 'dart:io';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/locale_provider.dart';
 import '../utils/constants.dart';
@@ -26,7 +27,7 @@ class DownloadAnime {
     final file = File(tempPath);
 
     try {
-      print('downloadUrl: $downloadUrl');
+      log('downloadUrl: $downloadUrl', name: 'DownloadAnime');
 
       final request = http.Request('GET', Uri.parse(downloadUrl));
       final response = await request.send();
@@ -49,47 +50,27 @@ class DownloadAnime {
           fileStream.add(chunk);
 
           if (progress - lastProgress >= 1) {
-            print("Прогресс загрузки аниме: $progress");
+            log('Прогресс загрузки аниме: $progress', name: 'DownloadAnime');
             showProgressNotification(name, progress, 'Загрузка аниме... $progress%');
             lastProgress = progress;
           }
         },
         onDone: () async {
-          print('Download complete. Extracting archive...');
+          log('Download complete. Extracting archive...', name: 'DownloadAnime');
 
           await showProgressNotification(name, 100, 'Загрузка завершена. Распаковка...');
 
-          final appDir = await getApplicationDocumentsDirectory();
-          final animeDir = Directory('${appDir.path}/anime/$animeId/');
-          animeDir.createSync(recursive: true);
-          final archive = ZipDecoder().decodeBytes(await file.readAsBytes());
+          await extractAnimeArchive(tempPath, animeId, name);
 
-          int extractedFiles = 0;
-          final totalFiles = archive.length;
-
-          for (final file in archive) {
-            if (file.isFile) {
-              final filePath = '${animeDir.path}/${file.name}';
-              File(filePath)
-                ..createSync(recursive: true)
-                ..writeAsBytesSync(file.content as List<int>);
-
-              // Обновляем прогресс распаковки
-              extractedFiles++;
-              final progress = ((extractedFiles / totalFiles) * 100).toInt();
-              print("Прогресс распаковки аниме: $progress");
-              showProgressNotification(name, progress, 'Распаковка файлов... $progress%');
-            }
-          }
-
-          print('Extraction complete, deleting archive.');
+          // Удаляем архив после распаковки
+          log('Extraction complete, deleting archive.', name: 'DownloadAnime');
           await file.delete();
 
           prefs.setStringList('anime_$animeId', [
             animeId,
             name,
-            '${appDir.path}/anime/$animeId/poster.jpg',
-            '${appDir.path}/anime/$animeId'
+            '${(await getApplicationDocumentsDirectory()).path}/anime/$animeId/poster.jpg',
+            '${(await getApplicationDocumentsDirectory()).path}/anime/$animeId'
           ]);
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -98,10 +79,10 @@ class DownloadAnime {
 
           // Уведомление о завершении
           await showDownloadCompleteNotification(name);
-          print('Anime directory path: ${animeDir.path}');
+          log('Anime directory path: ${(await getApplicationDocumentsDirectory()).path}/anime/$animeId', name: 'DownloadAnime');
         },
         onError: (e) {
-          print('Download error: $e');
+          log('Download error: $e', name: 'DownloadAnime');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Ошибка скачивания аниме: $e')),
           );
@@ -109,11 +90,39 @@ class DownloadAnime {
         cancelOnError: true,
       );
     } catch (e) {
-      print('Error: $e');
+      log('Error: $e', name: 'DownloadAnime');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка: $e')),
       );
     }
+  }
+
+  static Future<void> extractAnimeArchive(String archivePath, String animeId, String name) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final animeDir = Directory('${appDir.path}/anime/$animeId/');
+    animeDir.createSync(recursive: true);
+
+    // Открываем файл архива как поток
+    final inputStream = InputFileStream(archivePath);
+    final archive = ZipDecoder().decodeBuffer(inputStream);
+
+    int extractedFiles = 0;
+    final totalFiles = archive.files.length;
+
+    for (final file in archive.files) {
+      if (file.isFile) {
+        final filePath = '${animeDir.path}/${file.name}';
+        final outputStream = OutputFileStream(filePath);
+        file.writeContent(outputStream);
+
+        extractedFiles++;
+        final progress = ((extractedFiles / totalFiles) * 100).toInt();
+        log("Прогресс распаковки аниме: $progress", name: 'extractAnimeArchive');
+        showProgressNotification(name, progress, 'Распаковка файлов... $progress%');
+      }
+    }
+
+    inputStream.close();
   }
 
   static Future<void> deleteAnime(String animeId) async {
@@ -130,12 +139,12 @@ class DownloadAnime {
     if (await animeDir.exists()) {
       try {
         await animeDir.delete(recursive: true);
-        print('Anime files deleted: ${animeDir.path}');
+        log('Anime files deleted: ${animeDir.path}', name: 'DeleteAnime');
       } catch (e) {
-        print('Error deleting anime files: $e');
+        log('Error deleting anime files: $e', name: 'DeleteAnime');
       }
     } else {
-      print('Anime directory does not exist: ${animeDir.path}');
+      log('Anime directory does not exist: ${animeDir.path}', name: 'DeleteAnime');
     }
   }
 

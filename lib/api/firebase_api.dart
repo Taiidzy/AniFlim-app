@@ -10,10 +10,10 @@ import 'package:timezone/standalone.dart' as tz;
 class FirebaseApi {
   static Future<void> initNotifications() async {
     try {
-      final _firebaseMessaging = FirebaseMessaging.instance;
-      await _firebaseMessaging.requestPermission();
+      final firebaseMessaging = FirebaseMessaging.instance;
+      await firebaseMessaging.requestPermission();
 
-      final token = await _firebaseMessaging.getToken();
+      final token = await firebaseMessaging.getToken();
       if (token != null) {
         log("Token received: $token", name: 'FirebaseApi');
         await sendToken(token);
@@ -58,7 +58,7 @@ class FirebaseApi {
 
     // Если текущее время уже больше 00:01, то назначаем задачу на следующий день
     if (now.isAfter(nextRunTime)) {
-      final nextRunTimeTomorrow = nextRunTime.add(Duration(days: 1));
+      final nextRunTimeTomorrow = nextRunTime.add(const Duration(days: 1));
       final timeUntilNextRun = nextRunTimeTomorrow.difference(now);
       log('Scheduling task for tomorrow at 00:01 MSK', name: 'FirebaseApi');
       Timer(timeUntilNextRun, () => runTaskPeriodically());
@@ -72,7 +72,7 @@ class FirebaseApi {
   // Функция для периодического выполнения задачи
   static void runTaskPeriodically() {
     log('Starting periodic task every 24 hours', name: 'FirebaseApi');
-    Timer.periodic(Duration(days: 1), (timer) async {
+    Timer.periodic(const Duration(days: 1), (timer) async {
       log('Executing scheduled task', name: 'FirebaseApi');
       await initNotifications();
     });

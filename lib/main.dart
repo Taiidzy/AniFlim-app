@@ -26,19 +26,27 @@ import 'utils/notifications.dart';
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+Future<void> backgroundMessageHandler(RemoteMessage message) async {
+  // Вызываем Firebase инициализацию, если требуется
+  await Firebase.initializeApp();
+  await Notifications.showNotification(message.data['type'], message.data['text']);
+  print("Handling a background message: ${message.data}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
   // Запрос разрешений
   await Permision.requestNotificationPermission();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  
+  // Регистрация обработчика для фоновых сообщений
+  FirebaseMessaging.onBackgroundMessage(backgroundMessageHandler);
+
   await FirebaseApi.initNotifications();
 
-  // Инициализация уведомлений
   const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-  final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+  final InitializationSettings initializationSettings = const InitializationSettings(android: initializationSettingsAndroid);
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
@@ -68,10 +76,6 @@ void main() async {
   );
 }
 
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Notifications.showNotification(message.data['type'], message.data['text']);
-  print("Handling a background message: ${message.data}");
-}
 
 void _handleNotificationTap(String payload) {
   // Проверяем, что это уведомление от нового аниме
@@ -113,8 +117,8 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData.dark(),
       themeMode: themeProvider.themeMode,
       locale: localeProvider.locale,
-      supportedLocales: [Locale('en'), Locale('ru')],
-      localizationsDelegates: [
+      supportedLocales: const [Locale('en'), Locale('ru')],
+      localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

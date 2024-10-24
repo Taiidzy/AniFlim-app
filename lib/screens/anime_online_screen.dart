@@ -11,7 +11,7 @@ import '../widgets/episodes_anime_online.dart';
 class AnimeOnlineScreen extends StatefulWidget {
   final String animeId;
 
-  const AnimeOnlineScreen({Key? key, required this.animeId}) : super(key: key);
+  const AnimeOnlineScreen({super.key, required this.animeId});
 
   @override
   _AnimeOnlineScreenState createState() => _AnimeOnlineScreenState();

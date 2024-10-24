@@ -10,6 +10,8 @@ import 'anime_online_screen.dart';
 
 
 class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
   @override
   _NotificationsScreenState createState() => _NotificationsScreenState();
 }
@@ -74,7 +76,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: Text(localizations.notification),
       ),
       body: _notifications.isEmpty
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: _notifications.length,
               itemBuilder: (context, index) {

@@ -14,11 +14,13 @@ import '../main.dart';
 class DownloadAnime {
   static Future<void> downloadAnime(String animeId, String name, BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
+    log('Starting anime download process for: $animeId ($name)', name: 'DownloadAnime');
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     bool isHEVCEnabled = localeProvider.HEVC;
 
     String downloadUrl = '$hevcUrl/anime/download/$animeId';
     if (isHEVCEnabled) {
+      log('HEVC enabled, modifying download URL.', name: 'DownloadAnime');
       downloadUrl = '$hevcUrl/anime/download/$animeId?codec=true';
     }
 
@@ -34,6 +36,7 @@ class DownloadAnime {
 
       // Получаем размер файла из заголовков ответа
       final totalBytes = response.contentLength ?? 0;
+      log('Total bytes to download: $totalBytes', name: 'DownloadAnime');
 
       // Открываем поток для записи в файл
       final fileStream = file.openWrite();
@@ -43,6 +46,7 @@ class DownloadAnime {
 
       int lastProgress = 0;
       int receivedBytes = 0;
+      log('Starting file stream download.', name: 'DownloadAnime');
       response.stream.listen(
             (chunk) {
           receivedBytes += chunk.length;
@@ -73,6 +77,8 @@ class DownloadAnime {
             '${(await getApplicationDocumentsDirectory()).path}/anime/$animeId'
           ]);
 
+          log('Anime successfully saved in preferences.', name: 'DownloadAnime');
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Аниме успешно скачено!')),
           );
@@ -82,7 +88,7 @@ class DownloadAnime {
           log('Anime directory path: ${(await getApplicationDocumentsDirectory()).path}/anime/$animeId', name: 'DownloadAnime');
         },
         onError: (e) {
-          log('Download error: $e', name: 'DownloadAnime');
+          log('Error during download: $e', name: 'DownloadAnime');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Ошибка скачивания аниме: $e')),
           );
@@ -90,7 +96,7 @@ class DownloadAnime {
         cancelOnError: true,
       );
     } catch (e) {
-      log('Error: $e', name: 'DownloadAnime');
+      log('Exception: $e', name: 'DownloadAnime');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка: $e')),
       );
@@ -98,9 +104,11 @@ class DownloadAnime {
   }
 
   static Future<void> extractAnimeArchive(String archivePath, String animeId, String name) async {
+    log('Starting archive extraction for: $animeId', name: 'extractAnimeArchive');
     final appDir = await getApplicationDocumentsDirectory();
     final animeDir = Directory('${appDir.path}/anime/$animeId/');
     animeDir.createSync(recursive: true);
+    log('Anime directory created: ${animeDir.path}', name: 'extractAnimeArchive');
 
     // Открываем файл архива как поток
     final inputStream = InputFileStream(archivePath);
@@ -108,6 +116,7 @@ class DownloadAnime {
 
     int extractedFiles = 0;
     final totalFiles = archive.files.length;
+    log('Total files in archive: $totalFiles', name: 'extractAnimeArchive');
 
     for (final file in archive.files) {
       if (file.isFile) {
@@ -123,13 +132,16 @@ class DownloadAnime {
     }
 
     inputStream.close();
+    log('Extraction complete for: $animeId', name: 'extractAnimeArchive');
   }
 
   static Future<void> deleteAnime(String animeId) async {
+    log('Starting deletion process for anime: $animeId', name: 'DeleteAnime');
     final prefs = await SharedPreferences.getInstance();
 
     // Удаляем данные по ключу
     await prefs.remove('anime_$animeId');
+    log('Preferences for $animeId removed.', name: 'DeleteAnime');
 
     // Удаляем файлы, связанные с аниме
     final appDir = await getApplicationDocumentsDirectory();

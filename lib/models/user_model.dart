@@ -2,26 +2,42 @@ import 'lists_model.dart';
 
 class User {
   final int id;
-  final String username;
+  final String login;
   final String avatar;
-  final UserListsModel? userLists; // Добавлен список аниме
+  final int totalTime;
+  final int totalEpisode;
+  final List<dynamic> planed;
+  final List<AnimeProgressItem> watching;
+  final List<AnimeProgressItem> watched;
+  final List<dynamic> progress;
 
   User({
     required this.id,
-    required this.username,
+    required this.login,
     required this.avatar,
-    this.userLists, // Это поле теперь может быть null
+    required this.totalTime,
+    required this.totalEpisode,
+    required this.planed,
+    required this.watching,
+    required this.watched,
+    required this.progress,
   });
 
-  // Преобразование JSON в объект User
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['user_id'],
-      username: json['username'],
+      id: json['id'],
+      login: json['login'],
       avatar: json['avatar'],
-      userLists: json.containsKey('userLists') && json['userLists'] != null
-          ? UserListsModel.fromJson(json['userLists'])
-          : null, // Безопасная обработка отсутствия userLists
+      totalTime: json['total_time'] ?? 0,
+      totalEpisode: json['total_episode'] ?? 0,
+      planed: json['planed'] ?? [],
+      watching: (json['watching'] as List<dynamic>?)
+          ?.map((item) => AnimeProgressItem.fromJson(item))
+          .toList() ?? [],
+      watched: (json['watched'] as List<dynamic>?)
+          ?.map((item) => AnimeProgressItem.fromJson(item))
+          .toList() ?? [],
+      progress: json['progress'] ?? [],
     );
   }
 }

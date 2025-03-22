@@ -1,22 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="space.aniflim.aniflim">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-
-
+    
     <application
         android:label="AniFlim"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
-        <receiver android:exported="true" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"/>
-        <receiver android:exported="true" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </receiver>
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"

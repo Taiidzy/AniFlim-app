@@ -1,12 +1,16 @@
+import 'dart:io'; // Для определения платформы
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // Для Web
+import 'package:desktop_window/desktop_window.dart'; // Для Windows/macOS
 import '../api/anime_api.dart';
 import '../l10n/app_localizations.dart';
 import '../models/anime_model.dart';
 import '../utils/helpers.dart';
-import '../utils/update.dart';
 import '../widgets/anime_card.dart';
 import '../widgets/bottom_nav_bar.dart';
+import 'settings_screen.dart';
+import 'search_anime_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,23 +26,48 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     fetchAnime();
-    UpdateUtils.checkForUpdate(context);
+    _configureWindowSize(); // Настроим размер окна на десктопе
   }
 
-
   Future<void> fetchAnime() async {
-    try {
-      animeList = await AnimeAPI.fetchAnimeList();
-      setState(() {});
-    } catch (e) {
-      showErrorDialog(context, 'Failed to load anime list.');
+    print('fetchAnime called');
+    const maxRetries = 3; // 1 основная + 2 повторные попытки
+    int attempt = 0;
+    bool success = false;
+
+    while (attempt < maxRetries && !success) {
+      try {
+        animeList = await AnimeAPI.fetchAnimeList();
+        if (mounted) {
+          setState(() {});
+        }
+        success = true;
+      } catch (e) {
+        attempt++;
+        print('Attempt $attempt failed: $e');
+        
+        if (attempt >= maxRetries) {
+          if (mounted) {
+            showErrorDialog(context, 'Не удалось загрузить список аниме после $maxRetries попыток.');
+          }
+        } else {
+          // Добавляем задержку перед следующей попыткой
+          await Future.delayed(const Duration(seconds: 1));
+        }
+      }
+    }
+  }
+
+  void _configureWindowSize() async {
+    if (Platform.isMacOS || Platform.isWindows) {
+      await DesktopWindow.setWindowSize(const Size(900, 600));
     }
   }
 
   void _showSearch() {
     showSearch(
       context: context,
-      delegate: AnimeSearchDelegate(animeList), // Создайте класс AnimeSearchDelegate
+      delegate: SearchAnime(),
     );
   }
 
@@ -46,107 +75,99 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
+    // Группируем аниме по дню выхода
+    Map<int, List<Anime>> groupedAnime = {};
+    for (var anime in animeList) {
+      int day = anime.publishDayValue;
+      groupedAnime.putIfAbsent(day, () => []).add(anime);
+    }
+
+    final sortedDays = groupedAnime.keys.toList()..sort();
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(localizations.home),
+        title: Text(localizations.schedule, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedSearch02, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedSearch02,
+              color: isDarkTheme ? Colors.white : Colors.black,
+              size: 22.0,
+            ),
             onPressed: _showSearch,
           ),
           IconButton(
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedNotification03, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedSettings02,
+              color: isDarkTheme ? Colors.white : Colors.black,
+              size: 22.0,
+            ),
             onPressed: () {
-              Navigator.pushReplacementNamed(context, '/notifications');
-            },
-          ),
-          IconButton(
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedSettings02, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
-            onPressed: () {
+              if (Platform.isIOS) {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+              } else {
                 Navigator.pushReplacementNamed(context, '/settings');
-              },
+              }
+            },
           ),
         ],
       ),
       body: animeList.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.65,
-        ),
-        itemCount: animeList.length,
-        itemBuilder: (context, index) {
-          return AnimeCard(anime: animeList[index]);
-        },
-      ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 0), // Устанавливаем индекс для "Home"
+          : ListView(
+              children: sortedDays.map((day) {
+                final dayDescription = groupedAnime[day]!.isNotEmpty
+                    ? groupedAnime[day]![0].publishDayDescription
+                    : '';
+                final animesForDay = groupedAnime[day]!;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          dayDescription,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _getGridCount(context),
+                          childAspectRatio: 0.65,
+                        ),
+                        itemCount: animesForDay.length,
+                        itemBuilder: (context, index) {
+                          return AnimeCard(anime: animesForDay[index]);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+      bottomNavigationBar: kIsWeb ? null : const BottomNavBar(currentIndex: 0),
     );
+  }
+
+  int _getGridCount(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    if (Platform.isMacOS || Platform.isWindows) {
+      return width > 1200 ? 4 : 3;
+    } else if (Platform.isAndroid || Platform.isIOS) {
+      return 2;
+    } else {
+      return 2;
+    }
   }
 }
 
-class AnimeSearchDelegate extends SearchDelegate {
-  final List<Anime> animeList;
-
-  AnimeSearchDelegate(this.animeList);
-
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
-      ),
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    final results = animeList
-        .where((anime) => anime.name.toLowerCase().contains(query.toLowerCase()))
-        .toList();
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.65,
-      ),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        return AnimeCard(anime: results[index]);
-      },
-    );
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    final suggestions = animeList
-        .where((anime) => anime.name.toLowerCase().contains(query.toLowerCase()))
-        .toList();
-
-    return ListView.builder(
-      itemCount: suggestions.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          title: Text(suggestions[index].name),
-          onTap: () {
-            query = suggestions[index].name;
-            showResults(context);
-          },
-        );
-      },
-    );
-  }
-}

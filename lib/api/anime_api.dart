@@ -1,47 +1,48 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/anime_model.dart';
-import '../models/progress_model.dart';
+import '../models/anime_detail_model.dart';
 import '../utils/constants.dart';
 
 class AnimeAPI {
   // Получение списка аниме
   static Future<List<Anime>> fetchAnimeList() async {
+    final url = '$apiBaseUrl/anime/schedule/week';
+    final response = await http.get(Uri.parse(url));
+    
+    print('fetchAnimeList - Ответ: ${response.body}');
+
+    if (response.statusCode != 200) {
+      print('Ошибка HTTP: ${response.statusCode}');
+      throw Exception('HTTP Error ${response.statusCode}');
+    }
+
+    final decodedBody = utf8.decode(response.bodyBytes, allowMalformed: true);
+    // Проверка на битые данные
+    if (decodedBody.isEmpty || decodedBody.codeUnits.every((unit) => unit == 0)) {
+      throw Exception('Invalid response data');
+    }
+
     try {
-      final response = await http.get(Uri.parse('$apiBaseUrl/home'));
-
-      if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
-        final List<dynamic> decodedResponse = json.decode(decodedBody);
-
-        // Преобразование JSON в объекты Anime
-        List<Anime> animeList = decodedResponse.map((json) => Anime.fromJson(json)).toList();
-
-        // Фильтрация аниме по значению release
-        animeList = animeList.where((anime) => anime.release == 1).toList();
-
-        return animeList;
-      } else {
-        throw Exception('Failed to load anime');
-      }
+      final List<dynamic> decodedResponse = json.decode(decodedBody);
+      return decodedResponse.map((item) => Anime.fromJson(item['release'])).toList();
     } catch (e) {
-      throw Exception('Failed to load anime: $e');
+      print('Ошибка парсинга: $e');
+      throw Exception('JSON Parse Error');
     }
   }
 
-
   // Получение детальной информации об аниме
-  static Future<Anime> fetchAnimeDetail(String animeId) async {
+  static Future<AnimeDetail> fetchAnimeDetail(String animeId) async {
     try {
-      final response = await http.post(
-        Uri.parse('$apiBaseUrl/anime'),
-        body: json.encode({"animeId": animeId}),
+      final response = await http.get(
+        Uri.parse('$apiBaseUrl/anime/releases/$animeId'),
         headers: {"Content-Type": "application/json"}
       );
 
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
-        return Anime.fromJson(json.decode(decodedBody));
+        return AnimeDetail.fromJson(json.decode(decodedBody));
       } else {
         throw Exception('Failed to load anime detail');
       }
@@ -50,52 +51,31 @@ class AnimeAPI {
     }
   }
 
-  static Future<List<int>> fetchEpisodes(String animeId) async {
+  static Future<dynamic> fetchEpisode(String animeId) async {
     try {
-      final response = await http.post(
-        Uri.parse('$apiBaseUrl/anime_data'),
-        body: json.encode({"animeId": animeId}),
-        headers: {"Content-Type": "application/json"}
+      final response = await http.get(
+        Uri.parse('$apiBaseUrl/anime/releases/$animeId'),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final List<int> episodeList = data
-            .map((e) => int.parse(e['episode'].toString()))
-            .toList();
-        return episodeList;
+        final data = jsonDecode(response.body);
+        return data['episodes'];
       } else {
-        // Возвращаем пустой список или выбрасываем исключение
-        throw Exception('Failed to load episodes, status code: ${response.statusCode}');
+        throw Exception('Failed to load episode, status code: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Failed to load episodes: $e');
+      print('Full error details: $e');
+      throw Exception('Failed to load episode: $e');
     }
   }
 
-  static Future<List<AnimeProgress>> fetchProgress(String animeId, String username) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$apiBaseUrl/user/progress'),
-        body: json.encode({"animeId": animeId, "username": username}),
-        headers: {"Content-Type": "application/json"},
-      );
-
-      // Логирование ответа
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final List<AnimeProgress> progress = (data['progress'] as List<dynamic>)
-            .map((e) => AnimeProgress.fromJson(e))
-            .toList();
-        return progress;
-      } else {
-        throw Exception('Failed to load progress, status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to load progress: $e');
+  Future<List<Anime>> searchAnime(String query) async {
+    final response = await http.get(Uri.parse('$apiBaseUrl/app/search/releases?query=$query'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body) as List<dynamic>;
+      return data.map((json) => Anime.fromJson(json)).toList();
+    } else {
+      throw Exception('Ошибка загрузки данных');
     }
   }
 }

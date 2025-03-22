@@ -5,222 +5,279 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../api/anime_api.dart';
-import '../api/user_api.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
-import '../providers/user_provider.dart';
-import '../utils/constants.dart';
+import '../widgets/player_settings.dart';
 
 class EpisodePlayer extends StatefulWidget {
+  final String episodeId;
   final String episode;
   final String animeId;
   final String name;
   final String time;
+  final int ordinal;
 
-  const EpisodePlayer({super.key, required this.episode, required this.animeId, required this.name, this.time = '0'});
+  const EpisodePlayer({
+    super.key,
+    required this.episodeId,
+    required this.ordinal,
+    required this.episode,
+    required this.animeId,
+    required this.name,
+    required this.time,
+  });
 
   @override
   _EpisodePlayerState createState() => _EpisodePlayerState();
 }
 
 class _EpisodePlayerState extends State<EpisodePlayer> {
-  late VideoPlayerController _controller;
-  late String _currentEpisode;
+  bool _skipUsed = false;
+  VideoPlayerController? _controller;
   late String _startTime;
-  late String _animeId;
   bool _controlsVisible = true;
-  bool _skipButtonVisible = true;
-  bool _isFirstEpisode = false;
-  bool _isLastEpisode = false;
-  late List<int> _episodeList;
+  bool _skipButtonVisible = false;
   late Timer _hideControlsTimer;
   late ValueNotifier<bool> _isPlaying;
-  late Timer _updateTimeTimer;
-  late Timer _playbackPositionTimer;
+  Timer? _playbackPositionTimer; // Убрали late, добавили ?
   late ValueNotifier<Duration> _currentPositionNotifier;
+  List<dynamic> allEpisodeInfo = [];
+  Map<String, dynamic> episodeInfo = {};
+  bool _isFirstEpisode = false;
+  bool _isLastEpisode = false;
+  late int _currentOrdinal;
+  late int _openingStart;
+  late int _openingStop;
+  late int _endingStart;
+  late int _endingStop;
+  String? _currentQuality; // Добавляем для отслеживания текущего качества
+  Duration? _lastPosition; // Сохраняем позицию при смене качества
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final localeProvider = Provider.of<LocaleProvider>(context);
+    
+    if (_currentQuality != localeProvider.quality) {
+      _currentQuality = localeProvider.quality;
+      _lastPosition = _controller?.value.position;
+      _loadEpisode(_currentOrdinal);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _animeId = widget.animeId;
-    _currentEpisode = widget.episode;
     _startTime = widget.time;
-    _episodeList = [];
     _currentPositionNotifier = ValueNotifier(Duration.zero);
-    _initializePlayer();
+    _isPlaying = ValueNotifier(false);
     _setLandscapeMode();
     _startHideControlsTimer();
-    _fetchEpisodeList(); // Получаем список эпизодов
-  }
-
-  Future<void> _fetchEpisodeList() async {
-    final episodeList = await AnimeAPI.fetchEpisodes(_animeId);
-
-    setState(() {
-      _episodeList = episodeList;
-      _updateEpisodeStatus();
+    _currentOrdinal = widget.ordinal;
+    
+    _fetchEpisodeList().then((_) {
+      if (mounted) {
+        _updateEpisodeStatus();
+        _loadEpisode(_currentOrdinal);
+      }
     });
   }
 
+  Future<void> _fetchEpisodeList() async {
+    final episodeList = await AnimeAPI.fetchEpisode(widget.animeId);
+    if (mounted) {
+      setState(() => allEpisodeInfo = episodeList);
+    }
+  }
+
   void _updateEpisodeStatus() {
-    final int currentEpisodeNumber = int.parse(_currentEpisode);
-    final int lastEpisodeNumber = _episodeList.isNotEmpty ? _episodeList.last : 0;
+    final isFirst = _currentOrdinal == 1;
+    final isLast = _currentOrdinal == allEpisodeInfo.length;
+
+    if (isFirst != _isFirstEpisode || isLast != _isLastEpisode) {
+      setState(() {
+        _isFirstEpisode = isFirst;
+        _isLastEpisode = isLast;
+      });
+    }
+  }
+
+  void _loadEpisode(int episodeNumber) {
+    _skipUsed = false; // Сбрасываем флаг при каждой загрузке
+    if (episodeNumber < 1 || episodeNumber > allEpisodeInfo.length) return;
+
+    // Сохраняем текущее состояние воспроизведения
+    final wasPlaying = _controller?.value.isPlaying ?? false;
+    final currentPosition = _controller?.value.position ?? _lastPosition;
+
+    // Освобождаем старый контроллер
+    if (_controller != null) {
+      _controller!.removeListener(_updatePlaybackPosition);
+      _controller!.dispose();
+      _controller = null;
+    }
 
     setState(() {
-      _isFirstEpisode = currentEpisodeNumber == _episodeList.first;
-      _isLastEpisode = currentEpisodeNumber == lastEpisodeNumber;
+      _currentOrdinal = episodeNumber;
+      episodeInfo = allEpisodeInfo[episodeNumber - 1];
+      _skipButtonVisible = false;
+      
+      final opening = episodeInfo['opening'] is Map<String, dynamic> 
+          ? episodeInfo['opening'] 
+          : <String, dynamic>{};
+      _openingStart = (opening['start'] as int?) ?? 0;
+      _openingStop = (opening['stop'] as int?) ?? 0;
+      
+      final ending = episodeInfo['ending'] is Map<String, dynamic> 
+          ? episodeInfo['ending'] 
+          : <String, dynamic>{};
+      _endingStart = (ending['start'] as int?) ?? 0;
+      _endingStop = (ending['stop'] as int?) ?? 0;
+    });
+    
+    _updateEpisodeStatus();
+    _initializePlayer().then((_) {
+      if (!mounted) return;
+      
+      // Восстанавливаем позицию и состояние воспроизведения
+      if (currentPosition != null) {
+        _controller!.seekTo(currentPosition);
+      }
+      if (wasPlaying) {
+        _controller!.play();
+        _isPlaying.value = true;
+      }
     });
   }
 
   void _autoContinue() {
     final localProvider = Provider.of<LocaleProvider>(context, listen: false);
-    if (localProvider.autocontinue) {
-      if (!_isLastEpisode) {
-        _nextEpisode();
-        _startTime = '0';
-      }
+    if (localProvider.autocontinue && !_isLastEpisode) {
+      _loadEpisode(_currentOrdinal + 1);
     }
   }
 
-  void _initializePlayer() {
+  Future<void> _initializePlayer() async {
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
-    bool isHEVCEnabled = localeProvider.HEVC;
-    String videoUrl = '$apiBaseUrl/anime/stream/$_animeId/$_currentEpisode';
-    if (isHEVCEnabled) {
-      videoUrl = '$apiBaseUrl/anime/stream/$_animeId/$_currentEpisode?codec=true';
-      print('hevc video use');
-    }
-    int time = int.parse(_startTime.split('.')[0]);
-    _controller = VideoPlayerController.network(
-      videoUrl,
-    )
+    if (episodeInfo.isEmpty || !episodeInfo.containsKey('hls_480')) return;
+
+    String videoUrl = episodeInfo[localeProvider.quality];
+    int time = _lastPosition?.inSeconds ?? int.parse(_startTime.split('.')[0]);
+
+    _controller = VideoPlayerController.network(videoUrl)
       ..initialize().then((_) {
+        if (!mounted) return;
+        _controller!.addListener(_updatePlaybackPosition); // Добавляем слушатель
         setState(() {});
-        _controller.seekTo(_controller.value.position + Duration(seconds: time));
-        _controller.play(); // Автоматически воспроизводить видео после инициализации
-        _isPlaying = ValueNotifier<bool>(_controller.value.isPlaying);
-        _isPlaying.value = _controller.value.isPlaying;
-        _controller.addListener(_updatePlaybackPosition);
-        _startUpdateTimeTimer();
-        _startPlaybackPositionTimer(); // Таймер для обновления позиции каждую секунду
-        _startTime = '0';
-      }).catchError((error) {
-        // Обработка ошибок
-        print('Error initializing video player: $error');
+        _controller!.seekTo(Duration(seconds: time)).then((_) {
+          if (_lastPosition == null) {
+            _controller!.play();
+            _isPlaying.value = true;
+          }
+          _startPlaybackPositionTimer();
+        });
       });
   }
 
   void _updatePlaybackPosition() {
-    // Убедитесь, что позиция и длительность известны
-    if (_controller.value.isInitialized) {
-      final currentPosition = _controller.value.position;
-      final duration = _controller.value.duration;
+    if (_controller != null && _controller!.value.isInitialized) {
+      final currentPosition = _controller!.value.position;
+      final duration = _controller!.value.duration;
+      
+      _currentPositionNotifier.value = currentPosition;
 
-      _currentPositionNotifier.value = currentPosition; // Обновляем значение позиции
-
-      // Если воспроизведение завершено, выполните автопереход
+      if (!_skipUsed && currentPosition.inSeconds >= _openingStart && currentPosition.inSeconds <= _openingStop) {
+        setState(() => _skipButtonVisible = true);
+      }
+      
       if (currentPosition >= duration) {
         _autoContinue();
       }
+      _autoSkipOpening(currentPosition);
+      _marathonMode(currentPosition);
+    }
+  }
+
+  void _marathonMode(Duration currentPosition) {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+
+    final localProvider = Provider.of<LocaleProvider>(context, listen: false);
+    final currentSeconds = currentPosition.inSeconds;
+    final duration = _controller!.value.duration;
+
+    // Пропуск опенинга
+    if (localProvider.marathonMode && 
+        currentSeconds >= _openingStart &&
+        currentSeconds <= _openingStop &&
+        !_skipUsed) {
+      _skipUsed = true;
+      _controller!.seekTo(Duration(seconds: _openingStop));
+      if (mounted) setState(() => _skipButtonVisible = false);
+    }
+
+    // Пропуск эндинга
+    if (localProvider.marathonMode && 
+        currentSeconds >= _endingStart &&
+        currentSeconds <= _endingStop - 5) {
+      _controller!.seekTo(Duration(seconds: _endingStop));
+    }
+
+    // Автопродолжение
+    if (localProvider.marathonMode && 
+      currentPosition + const Duration(seconds: 1) >= duration) {
+      _loadEpisode(_currentOrdinal + 1);
+    }
+  }
+
+  void _autoSkipOpening(Duration currentPosition) {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+
+    final localProvider = Provider.of<LocaleProvider>(context, listen: false);
+    final currentSeconds = currentPosition.inSeconds;
+
+    if (localProvider.autoSkipOpening && 
+        currentSeconds >= _openingStart &&
+        currentSeconds <= _openingStop &&
+        !_skipUsed) {
+      _skipUsed = true;
+      _controller!.seekTo(Duration(seconds: _openingStop));
+      if (mounted) setState(() => _skipButtonVisible = false);
     }
   }
 
   void _startPlaybackPositionTimer() {
+    _playbackPositionTimer?.cancel();
     _playbackPositionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _updatePlaybackPosition();
-    });
-  }
-
-  void _startUpdateTimeTimer() {
-    UserAPI userAPI = UserAPI();
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final user = userProvider.user;
-
-    _updateTimeTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (user != null && _controller.value.isPlaying) {
-        int episode = int.parse(_currentEpisode);
-        int positionInSeconds = _controller.value.position.inSeconds;
-
-        await userAPI.updateTime(
-          user.username,
-          _animeId,
-          episode.toString(),
-          positionInSeconds.toString(),
-        );
-
-        if (timer.tick % 6 == 0) { // Обновление каждые 30 секунд
-          await userAPI.updateMoment(user.username, _animeId, _currentEpisode.toString());
-        }
-      }
-    });
-  }
-
-  void _togglePlayPause() {
-    setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
-        _updateTimeTimer.cancel(); // Останавливаем таймер
-      } else {
-        _controller.play();
-        _startUpdateTimeTimer(); // Запускаем таймер снова
-      }
+      if (mounted) _updatePlaybackPosition();
     });
   }
 
   void _setLandscapeMode() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky); // Полный экран, без строки состояния
-    SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight
+    ]);
   }
 
-  void _nextEpisode() {
+  void _skipOpening() {
+    if (_controller == null) return;
     setState(() {
-      int episodeNumber = int.parse(_currentEpisode) + 1;
-      _currentEpisode = episodeNumber.toString().padLeft(2, '0');
-      _loadEpisode(_currentEpisode);
-    });
-  }
-
-  void _previousEpisode() {
-    setState(() {
-      int episodeNumber = int.parse(_currentEpisode);
-      if (episodeNumber > 1) {
-        episodeNumber--;
-        _currentEpisode = episodeNumber.toString().padLeft(2, '0');
-        _loadEpisode(_currentEpisode);
-      }
-    });
-  }
-
-  void _loadEpisode(String episodeNumber) {
-    setState(() {
-      _skipButtonVisible = true; // Показываем кнопку "Пропустить" при изменении эпизода
-    });
-    _controller.dispose();
-    _initializePlayer();
-    _updateEpisodeStatus(); // Обновляем статус кнопок
-  }
-
-  void _skipForward() {
-    setState(() {
+      _skipUsed = true;
       _skipButtonVisible = false;
-      _controller.seekTo(_controller.value.position + const Duration(seconds: 90));
+      // Можно сразу перейти к концу opening
+      _controller!.seekTo(Duration(seconds: _openingStop));
     });
   }
 
   void _toggleControls() {
-    setState(() {
-      _controlsVisible = !_controlsVisible;
-    });
+    setState(() => _controlsVisible = !_controlsVisible);
     _resetHideControlsTimer();
   }
 
   void _startHideControlsTimer() {
     _hideControlsTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) {
-        setState(() {
-          _controlsVisible = false;
-        });
-      }
+      if (mounted) setState(() => _controlsVisible = false);
     });
   }
 
@@ -231,21 +288,20 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     _isPlaying.dispose();
     _hideControlsTimer.cancel();
-    _updateTimeTimer.cancel();
-    _playbackPositionTimer.cancel(); // Останавливаем таймер для обновления позиции
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge); // Вернуть систему к обычному состоянию
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    _playbackPositionTimer?.cancel();
     _currentPositionNotifier.dispose();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
   }
 
   String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   @override
@@ -253,188 +309,219 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
     final localizations = AppLocalizations.of(context);
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     var name = widget.name;
-    if (name.length > 25) {
-      name = '${name.substring(0, 25)}...';
-    }
+    if (name.length > 25) name = '${name.substring(0, 25)}...';
 
     return Scaffold(
       backgroundColor: isDarkTheme ? Colors.black : Colors.white,
       body: GestureDetector(
         onTap: _toggleControls,
         onDoubleTapDown: (details) {
+          if (_controller == null) return;
           final screenWidth = MediaQuery.of(context).size.width;
-          if (details.globalPosition.dx < screenWidth / 2) {
-            // Левая часть экрана: перемотка на 5 секунд назад
-            _controller.seekTo(
-              _controller.value.position - const Duration(seconds: 5),
-            );
-          } else {
-            // Правая часть экрана: перемотка на 5 секунд вперед
-            _controller.seekTo(
-              _controller.value.position + const Duration(seconds: 5),
-            );
-          }
+          final offset = details.globalPosition.dx < screenWidth / 2 
+              ? const Duration(seconds: -5)
+              : const Duration(seconds: 5);
+          _controller!.seekTo(_controller!.value.position + offset);
         },
         child: Stack(
           children: [
             Center(
-              child: _controller.value.isInitialized
+              child: _controller != null && _controller!.value.isInitialized
                   ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
-              )
+                      aspectRatio: _controller!.value.aspectRatio,
+                      child: VideoPlayer(_controller!),
+                    )
                   : const Center(child: CircularProgressIndicator()),
             ),
-            // Полупрозрачные контролы
-            AnimatedOpacity(
-              opacity: _controlsVisible ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: Container(
-                color: isDarkTheme
-                    ? Colors.black.withOpacity(0.4)
-                    : Colors.white.withOpacity(0.4),
-                child: Column(
-                  children: [
-                    Container(
-                      color: isDarkTheme ? Colors.black.withOpacity(0.6) : Colors.white.withOpacity(0.7),
-                      child: AppBar(
-                        title: Center(
-                            child: Text(
-                                '$name | ${localizations.episode}: $_currentEpisode',
-                                style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black))
-                        ),
-                        backgroundColor: isDarkTheme ? Colors.black.withOpacity(0.9) : Colors.white.withOpacity(0.9),
-                        elevation: 0,
-                        toolbarHeight: 50, // Уменьшенная высота AppBar
-                      ),
+            // Оборачиваем слой с контролами в IgnorePointer,
+            // чтобы при скрытии (opacity == 0) нажатия не обрабатывались
+            IgnorePointer(
+              ignoring: !_controlsVisible,
+              child: AnimatedOpacity(
+                opacity: _controlsVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.black.withOpacity(0.0)
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          // Кнопки управления воспроизведением
-                          Align(
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (!_isFirstEpisode)
-                                  IconButton(
-                                    iconSize: 48,
-                                    icon: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedPrevious,
-                                      color: isDarkTheme ? Colors.white : Colors.black,
-                                    ),
-                                    onPressed: _previousEpisode,
-                                  ),
-                                const SizedBox(width: 20),
-                                IconButton(
-                                  iconSize: 64,
-                                  icon: HugeIcon(
-                                    icon: _controller.value.isPlaying ? HugeIcons.strokeRoundedPause : HugeIcons.strokeRoundedPlay,
-                                    color: isDarkTheme ? Colors.white : Colors.black,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      if (_controller.value.isPlaying) {
-                                        _controller.pause();
-                                      } else {
-                                        _controller.play();
-                                      }
-                                      _isPlaying.value = _controller.value.isPlaying;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 20),
-                                if (!_isLastEpisode)
-                                  IconButton(
-                                    iconSize: 48,
-                                    icon: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedNext, // Замените на соответствующий HugeIcon
-                                      color: isDarkTheme ? Colors.white : Colors.black,
-                                    ),
-                                    onPressed: _nextEpisode,
-                                  ),
-                              ],
+                  ),
+                  child: Column(
+                    children: [
+                      AppBar(
+                        backgroundColor: Colors.transparent,
+                        elevation: 0,
+                        title: Center(
+                          child: Text(
+                            '$name | ${localizations.episode}: $_currentOrdinal',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          // Прогресс-бар
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: VideoControls(
-                              controller: _controller,
-                              isDarkTheme: isDarkTheme,
+                        ),
+                        actions: [
+                          IconButton(
+                            icon: HugeIcon(
+                              icon: HugeIcons.strokeRoundedSettings02,
+                              color: Colors.white,
+                              size: 24.0,
                             ),
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: isDarkTheme ? Colors.black : Colors.white,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                                ),
+                                builder: (BuildContext context) {
+                                  return SizedBox(
+                                    height: MediaQuery.of(context).size.height * 0.65,
+                                    child: SettingsMenu(episodeInfo: episodeInfo),
+                                  );
+                                },
+                              );
+                            },
                           ),
-                          // Текст с текущей позицией и общей длительностью
-                          Positioned(
-                            bottom: 60,
-                            left: 20,
-                            right: 20,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ValueListenableBuilder<Duration>(
-                                  valueListenable: _currentPositionNotifier,
-                                  builder: (context, value, child) {
-                                    return Text(
-                                      _formatDuration(value),
-                                      style: TextStyle(
-                                        color: isDarkTheme ? Colors.white : Colors.black,
-                                      ),
-                                    );
-                                  },
-                                ),
-                                ValueListenableBuilder<Duration>(
-                                  valueListenable: _currentPositionNotifier,
-                                  builder: (context, value, child) {
-                                    final duration = _controller.value.duration;
-                                    return Text(
-                                      _formatDuration(duration),
-                                      style: TextStyle(
-                                        color: isDarkTheme ? Colors.white : Colors.black,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Кнопка "Пропустить вперед"
-                          if (_skipButtonVisible)
-                            Positioned(
-                              right: 20,
-                              bottom: 100,
-                              child: ElevatedButton.icon(
-                                onPressed: _skipForward,
-                                icon: HugeIcon(
-                                  icon: HugeIcons.strokeRoundedForward01, // Замените на соответствующий HugeIcon
-                                  color: isDarkTheme ? Colors.white : Colors.black,
-                                ),
-                                label: Text(
-                                  localizations.skip,
-                                  style: TextStyle(
-                                    color: isDarkTheme ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isDarkTheme
-                                      ? Colors.grey[800]
-                                      : Colors.grey[300], // Цвет фона кнопки
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                              ),
-                            ),
                         ],
                       ),
-                    ),
-                  ],
+                      Expanded(
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (!_isFirstEpisode)
+                                _buildControlButton(
+                                  icon: HugeIcons.strokeRoundedPrevious,
+                                  onPressed: () => _loadEpisode(_currentOrdinal - 1),
+                                ),
+                              const SizedBox(width: 30),
+                              ValueListenableBuilder<bool>(
+                                valueListenable: _isPlaying,
+                                builder: (context, isPlaying, _) {
+                                  return _buildControlButton(
+                                    icon: isPlaying 
+                                        ? HugeIcons.strokeRoundedPause 
+                                        : HugeIcons.strokeRoundedPlay,
+                                    iconSize: 32,
+                                    onPressed: () {
+                                      if (_controller == null) return;
+                                      if (isPlaying) {
+                                        _controller!.pause();
+                                      } else {
+                                        _controller!.play();
+                                      }
+                                      _isPlaying.value = !isPlaying;
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 30),
+                              if (!_isLastEpisode)
+                                _buildControlButton(
+                                  icon: HugeIcons.strokeRoundedNext,
+                                  onPressed: () => _loadEpisode(_currentOrdinal + 1),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Новая полоска для перемотки (SeekBar)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: _controller != null && _controller!.value.isInitialized
+                            ? SeekBar(
+                                controller: _controller!,
+                                isDarkTheme: isDarkTheme,
+                              )
+                            : const SizedBox(),
+                      ),
+                      // Отображение текущего времени и длительности
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ValueListenableBuilder<Duration>(
+                              valueListenable: _currentPositionNotifier,
+                              builder: (context, value, _) => Text(
+                                _formatDuration(value),
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            ValueListenableBuilder<Duration>(
+                              valueListenable: _currentPositionNotifier,
+                              builder: (context, value, _) => Text(
+                                _formatDuration(_controller?.value.duration ?? Duration.zero),
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
+            // Плавающая кнопка для пропуска опенинга
+            if (_skipButtonVisible && _controller != null)
+              Positioned(
+                bottom: 100,
+                right: 20,
+                child: FloatingActionButton.extended(
+                  backgroundColor: Colors.black.withOpacity(0.7),
+                  onPressed: _skipOpening,
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedForward01,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  label: Text(localizations.skip, style: const TextStyle(color: Colors.white)),
+                ),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton({required IconData icon, double iconSize = 28, required VoidCallback onPressed}) {
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              offset: const Offset(2, 2),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(100), // Круговой радиус
+          onTap: onPressed,
+          child: Container(
+            padding: const EdgeInsets.all(10), // Отступы для кликабельной области
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+            ),
+            child: HugeIcon(
+              icon: icon,
+              color: Colors.white,
+              size: iconSize,
+            ),
+          ),
         ),
       ),
     );
@@ -445,21 +532,91 @@ class VideoControls extends StatelessWidget {
   final VideoPlayerController controller;
   final bool isDarkTheme;
 
-  const VideoControls({super.key, required this.controller, required this.isDarkTheme});
+  const VideoControls({
+    super.key,
+    required this.controller,
+    required this.isDarkTheme,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: VideoProgressIndicator(
-        controller,
-        allowScrubbing: true,
-        colors: VideoProgressColors(
-          playedColor: Colors.red,
-          bufferedColor: Colors.grey,
-          backgroundColor: isDarkTheme ? Colors.grey[800]! : Colors.grey[300]!,
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 20.0), // Увеличенный размер прогресс-бара
+    return VideoProgressIndicator(
+      controller,
+      allowScrubbing: true,
+      colors: VideoProgressColors(
+        playedColor: Colors.redAccent,
+        bufferedColor: Colors.white70,
+        backgroundColor: isDarkTheme ? Colors.white24 : Colors.black26,
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+    );
+  }
+}
+
+class SeekBar extends StatefulWidget {
+  final VideoPlayerController controller;
+  final bool isDarkTheme;
+  const SeekBar({super.key, required this.controller, required this.isDarkTheme});
+
+  @override
+  _SeekBarState createState() => _SeekBarState();
+}
+
+class _SeekBarState extends State<SeekBar> {
+  double _currentSliderValue = 0;
+  bool _isDragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Инициализируем значение с текущей позиции видео, если оно уже доступно
+    if (widget.controller.value.isInitialized) {
+      _currentSliderValue = widget.controller.value.position.inSeconds.toDouble();
+    }
+    widget.controller.addListener(_updateSlider);
+  }
+  
+  void _updateSlider() {
+    if (!_isDragging && widget.controller.value.isInitialized) {
+      setState(() {
+        _currentSliderValue = widget.controller.value.position.inSeconds.toDouble();
+      });
+    }
+  }
+  
+  @override
+  void dispose() {
+    widget.controller.removeListener(_updateSlider);
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final duration = widget.controller.value.duration.inSeconds.toDouble();
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(
+        activeTrackColor: Colors.redAccent,
+        inactiveTrackColor: widget.isDarkTheme ? Colors.white24 : Colors.black26,
+        thumbColor: Colors.white,
+        overlayColor: Colors.white.withOpacity(0.2),
+        trackHeight: 4.0,
+      ),
+      child: Slider(
+        min: 0,
+        max: duration > 0 ? duration : 1,
+        value: _currentSliderValue.clamp(0, duration),
+        onChanged: (value) {
+          setState(() {
+            _currentSliderValue = value;
+          });
+        },
+        onChangeStart: (value) {
+          _isDragging = true;
+        },
+        onChangeEnd: (value) {
+          _isDragging = false;
+          widget.controller.seekTo(Duration(seconds: value.toInt()));
+        },
       ),
     );
   }

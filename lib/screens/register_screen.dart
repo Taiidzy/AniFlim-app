@@ -29,10 +29,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     final login = _loginController.text;
     final password = _passwordController.text;
-    final email = _emailController.text;
     final localizations = AppLocalizations.of(context);
 
-    final reg = await AuthAPI.register(login, password, email);
+    final reg = await AuthAPI.register(login, password);
     if (reg == 200) {
       Navigator.pushReplacementNamed(context, '/');
     } else {
@@ -119,23 +118,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return localizations.enl;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _emailController,
-                                decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.email),
-                                  labelText: localizations.email,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return localizations.ene;
                                   }
                                   return null;
                                 },

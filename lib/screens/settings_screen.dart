@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
-import '../utils/codecs.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,22 +13,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-
-  bool _isHEVCSupported = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkHEVCSupport();
-  }
-
-  // Метод для проверки наличия кодека HEVC
-  Future<void> _checkHEVCSupport() async {
-    List<String> codecs = await Codecs.getSupportedVideoCodecs();
-    setState(() {
-      _isHEVCSupported = codecs.contains('video/hevc');
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,34 +36,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(localizations.style, style: const TextStyle(fontSize: 18)),
+            Text(localizations.globalSettings, style: const TextStyle(fontSize: 20)),
             SwitchListTile(
-              title: Text(localizations.darkTheme),
+              title: Text(localizations.darkTheme, style: const TextStyle(fontSize: 16)),
               value: themeProvider.themeMode == ThemeMode.dark,
               onChanged: (value) {
                 themeProvider.toggleTheme(value);
               },
-            ),
-            const SizedBox(height: 20),
-            Text(localizations.style, style: const TextStyle(fontSize: 18)),
-            SwitchListTile(
-              title: Text(localizations.autocontinue),
-              value: localeProvider.autocontinue,
-              onChanged: (value) {
-                localeProvider.setAutocontinue(value);
-              },
-            ),
-            const SizedBox(height: 20),
-            Text(localizations.codecSettings, style: const TextStyle(fontSize: 18)),
-            SwitchListTile(
-              title: Text(localizations.enableHEVC, style: const TextStyle(fontSize: 12)),
-              value: localeProvider.HEVC,
-              onChanged: _isHEVCSupported ? (value) {
-                localeProvider.setHEVC(value);
-              } : null, // Заблокировать переключатель, если HEVC не поддерживается
-              subtitle: _isHEVCSupported
-                  ? null
-                  : Text(localizations.hevcNotSupported, style: const TextStyle(color: Colors.red)),
             ),
             const SizedBox(height: 20),
             Text(localizations.language, style: const TextStyle(fontSize: 18)),
@@ -101,6 +63,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text('Русский'),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            Text(localizations.playerSettings, style: const TextStyle(fontSize: 20)),
+            SwitchListTile(
+              title: Text(localizations.autocontinue, style: const TextStyle(fontSize: 16)),
+              value: localeProvider.autocontinue,
+              onChanged: (value) {
+                localeProvider.setAutocontinue(value);
+              },
             ),
           ],
         ),

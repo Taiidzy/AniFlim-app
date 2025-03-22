@@ -4,11 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocaleProvider with ChangeNotifier {
   Locale _locale = const Locale('en');
   bool _autocontinue = false;
-  bool _HEVC = false;
+  bool _marathonMode = false;
+  bool _autoSkipOpening = false;
+  String _quality = 'hls_480';
 
   Locale get locale => _locale;
   bool get autocontinue => _autocontinue;
-  bool get HEVC => _HEVC;
+  bool get marathonMode => _marathonMode;
+  bool get autoSkipOpening => _autoSkipOpening;
+  String get quality => _quality;
 
   LocaleProvider() {
     _loadPreferences();
@@ -25,8 +29,10 @@ class LocaleProvider with ChangeNotifier {
     // Загрузка сохранённого состояния авто-продолжения
     _autocontinue = prefs.getBool('autocontinue') ?? false;
 
-    // Загрузка состояния HEVC
-    _HEVC = prefs.getBool('_HEVCEnabled') ?? false;
+    // Загрузка состояния марафона
+    _marathonMode = prefs.getBool('_marathonMode') ?? false;
+
+    _quality = prefs.getString('quality') ?? 'hls_480';
 
     notifyListeners(); // Уведомляем всех слушателей после загрузки настроек
   }
@@ -47,12 +53,28 @@ class LocaleProvider with ChangeNotifier {
     _autocontinue = value;
     notifyListeners();
   }
-
-  // Сохранение и установка HEVC
-  Future<void> setHEVC(bool value) async {
+  
+  // Сохранение и установка режима марафона
+  Future<void> setMarathonMode(bool value) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('_HEVCEnabled', value);
-    _HEVC = value;
+    await prefs.setBool('marathonMode', value);
+    _marathonMode = value;
+    notifyListeners();
+  }
+  
+  // Сохранение и установка режима марафона
+  Future<void> setAutoSkipOpening(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('autoSkipOpening', value);
+    _autoSkipOpening = value;
+    notifyListeners();
+  }
+  
+  // Сохранение и установка режима марафона
+  Future<void> setQuality(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('quality', value);
+    _quality = value;
     notifyListeners();
   }
 }

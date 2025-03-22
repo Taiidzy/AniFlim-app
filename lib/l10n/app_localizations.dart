@@ -75,6 +75,15 @@ class AppLocalizations {
       'canceldownload': 'Cancel the download',
       'unarchive': 'Unarchive',
       'notification': 'Notifications',
+      'globalSettings': 'Globals settings',
+      'playerSettings': 'Player settings',
+      'marathonMode': 'Marathon mode',
+      'autoSkipOpening': 'Auto skip opening',
+      'searchEpisode': 'Search episode',
+      'enterEpisodeNumber': 'Enter episode number',
+      'ageRaiting': 'Age raiting',
+      'quality': 'Quality',
+      'schedule': 'Schedule',
     },
     'ru': {
       'title': 'AniFlim',
@@ -138,6 +147,15 @@ class AppLocalizations {
       'canceldownload': 'Отменить загрузку',
       'unarchive': 'Разархивирование',
       'notification': 'Уведомления',
+      'globalSettings': 'Глобальные настройки',
+      'playerSettings': 'Настройки плеера',
+      'marathonMode': 'Режим марафона',
+      'autoSkipOpening': 'Авто пропуск опенинга',
+      'searchEpisode': 'Поиск эпизода',
+      'enterEpisodeNumber': 'Введите номер эпизода',
+      'ageRaiting': 'Возрастной рейтинг',
+      'quality': 'Качество',
+      'schedule': 'Расписание',
     },
   };
 
@@ -383,6 +401,42 @@ class AppLocalizations {
 
   String get notification {
     return _localizedValues[locale.languageCode]!['notification']!;
+  }
+
+  String get globalSettings {
+    return _localizedValues[locale.languageCode]!['globalSettings']!;
+  }
+
+  String get playerSettings {
+    return _localizedValues[locale.languageCode]!['playerSettings']!;
+  }
+
+  String get marathonMode {
+    return _localizedValues[locale.languageCode]!['marathonMode']!;
+  }
+
+  String get autoSkipOpening {
+    return _localizedValues[locale.languageCode]!['autoSkipOpening']!;
+  }
+
+  String get searchEpisode {
+    return _localizedValues[locale.languageCode]!['searchEpisode']!;
+  }
+
+  String get enterEpisodeNumber {
+    return _localizedValues[locale.languageCode]!['enterEpisodeNumber']!;
+  }
+
+  String get ageRaiting {
+    return _localizedValues[locale.languageCode]!['ageRaiting']!;
+  }
+
+  String get quality {
+    return _localizedValues[locale.languageCode]!['quality']!;
+  }
+
+  String get schedule {
+    return _localizedValues[locale.languageCode]!['schedule']!;
   }
 }
 

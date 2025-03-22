@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../api/download_api.dart';
 import '../api/anime_api.dart';
 import '../l10n/app_localizations.dart';
-import '../models/anime_model.dart';
+import '../models/anime_detail_model.dart';
 import '../widgets/detail_anime.dart';
 import '../widgets/episodes_anime_online.dart';
 
@@ -17,55 +15,32 @@ class AnimeOnlineScreen extends StatefulWidget {
   _AnimeOnlineScreenState createState() => _AnimeOnlineScreenState();
 }
 
-class _AnimeOnlineScreenState extends State<AnimeOnlineScreen> {
-  Anime? anime; // Переменная для хранения данных об аниме
-  bool showDetail = true;
-  bool isDownloading = false;
-  bool isDownloaded = false;
-  bool isLoading = true; // Добавил состояние загрузки
-  String? errorMessage; // Сообщение об ошибке
+class _AnimeOnlineScreenState extends State<AnimeOnlineScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimeDetail anime;
+  late TabController _tabController;
+  bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadAnimeDetail();
-    _checkIfDownloaded(); // Проверка на наличие аниме в списке
   }
 
   Future<void> _loadAnimeDetail() async {
     try {
-      // Вызов функции для получения данных об аниме
       final fetchedAnime = await AnimeAPI.fetchAnimeDetail(widget.animeId);
       setState(() {
         anime = fetchedAnime;
-        isLoading = false; // Завершаем загрузку
+        isLoading = false;
       });
     } catch (e) {
       setState(() {
         errorMessage = e.toString();
-        isLoading = false; // Завершаем загрузку с ошибкой
+        isLoading = false;
       });
-    }
-  }
-
-  Future<void> _checkIfDownloaded() async {
-    bool result = await isAnimeInList(widget.animeId);
-    setState(() {
-      isDownloaded = result;
-    });
-  }
-
-  Future<bool> isAnimeInList(String animeId) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Получаем список по ключу 'anime_$animeId'
-    List<String>? animeData = prefs.getStringList('anime_$animeId');
-
-    // Если список не пустой и содержит это animeId
-    if (animeData != null && animeData.isNotEmpty && animeData.contains(animeId)) {
-      return true;
-    } else {
-      return false;
     }
   }
 
@@ -74,26 +49,19 @@ class _AnimeOnlineScreenState extends State<AnimeOnlineScreen> {
     final localizations = AppLocalizations.of(context);
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
 
-    // Отображаем индикатор загрузки или ошибку, если есть
     if (isLoading) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Загрузка...'),
-        ),
-        body: const Center(child: CircularProgressIndicator()), // Идет загрузка
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (errorMessage != null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Ошибка'),
-        ),
-        body: Center(child: Text('Ошибка: $errorMessage')), // Показываем ошибку
+        appBar: AppBar(title: Text('Ошибка')),
+        body: Center(child: Text('Ошибка: $errorMessage')),
       );
     }
 
-    // Если данные загружены успешно, отображаем контент
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -102,75 +70,23 @@ class _AnimeOnlineScreenState extends State<AnimeOnlineScreen> {
             color: isDarkTheme ? Colors.white : Colors.black,
             size: 24.0,
           ),
-          onPressed: () {
-            Navigator.pop(context); // Вернуться на предыдущий экран
-          },
+          onPressed: () => Navigator.pop(context),
         ),
-        title: Text(anime?.name ?? 'Аниме'), // Используем данные об аниме
-        actions: [
-          isDownloaded
-              ? const HugeIcon(
-                  icon: HugeIcons.strokeRoundedCheckmarkCircle02,
-                  color: Color(0xFF7ED321),
-                  size: 24.0,
-                )
-              : isDownloading
-                  ? const CircularProgressIndicator()
-                  : IconButton(
-                      icon: HugeIcon(
-                        icon: HugeIcons.strokeRoundedDownload04,
-                        color: isDarkTheme ? Colors.white : Colors.black,
-                        size: 22.0,
-                      ),
-                      onPressed: () async {
-                        setState(() {
-                          isDownloading = true;
-                        });
-                        await DownloadAnime.downloadAnime(
-                            anime!.id, anime!.name, context);
-                        setState(() {
-                          isDownloading = false;
-                          isDownloaded = true;
-                        });
-                      },
-                    ),
-        ],
+        title: Text(anime.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.blueAccent,
+          tabs: [
+            Tab(text: localizations.detail),
+            Tab(text: localizations.watch),
+          ],
+        ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      showDetail = true;
-                    });
-                  },
-                  child: Text(localizations.detail),
-                ),
-              ),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      showDetail = false;
-                    });
-                  },
-                  child: Text(localizations.watch),
-                ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: showDetail
-                  ? DetailAnime(anime: anime!) // Передаем данные об аниме
-                  : EpisodesAnime(
-                      animeId: anime!.id, animename: anime!.name), // Передаем id и имя
-            ),
-          ),
+          DetailAnime(anime: anime),
+          EpisodesAnime(animeId: anime.id, animename: anime.name),
         ],
       ),
     );

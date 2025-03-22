@@ -15,23 +15,20 @@ class BottomNavBar extends StatelessWidget {
       currentIndex: currentIndex,
       selectedItemColor: Colors.purple,  // Цвет активной иконки
       unselectedItemColor: Colors.grey,  // Цвет неактивных иконок
-      backgroundColor: Colors.white,     // Фон нижней панели
+      backgroundColor: isDarkTheme ? Color.fromRGBO(20, 20, 20, 1) : Colors.white,     // Фон нижней панели
       items: [
         BottomNavigationBarItem(icon: HugeIcon(icon: HugeIcons.strokeRoundedHome11, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0), label: localizations.home),
         BottomNavigationBarItem(icon: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0), label: localizations.profile),
         BottomNavigationBarItem(icon: HugeIcon(icon: HugeIcons.strokeRoundedLeftToRightListBullet, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0), label: localizations.lists),
-        BottomNavigationBarItem(icon: HugeIcon(icon: HugeIcons.strokeRoundedDownload04, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0), label: localizations.downloadedanime),
       ],
 
       onTap: (index) {
         if (index == 0) {
           Navigator.pushReplacementNamed(context, '/');
         } else if (index == 1) {
-          Navigator.pushReplacementNamed(context, '/profile');
+          Navigator.pushReplacementNamed(context, '/development');
         } else if (index == 2) {
-          Navigator.pushReplacementNamed(context, '/lists');
-        } else if (index == 3) {
-          Navigator.pushReplacementNamed(context, '/downloadedanime');
+          Navigator.pushReplacementNamed(context, '/development');
         }
       },
     );

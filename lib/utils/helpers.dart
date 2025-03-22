@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/home_screen.dart';
 
 void showErrorDialog(BuildContext context, String message) {
   showDialog(
@@ -12,6 +13,12 @@ void showErrorDialog(BuildContext context, String message) {
             child: const Text('OK'),
             onPressed: () {
               Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text('Ещё раз'),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
             },
           ),
         ],

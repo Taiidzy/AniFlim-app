@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import '../api/auth_api.dart';
-import '../api/lists_api.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 
@@ -33,14 +32,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final localizations = AppLocalizations.of(context);
 
     if (_formKey.currentState?.validate() ?? false) {
-      final user = await AuthAPI.login(username, password);
+      final token = await AuthAPI.login(username, password);
 
-      if (user != null) {
-        Provider.of<UserProvider>(context, listen: false).setUser(user);
-        final userLists = await ListsAPI.fetchlists(user.username);
-        if (userLists != null) {
-          Provider.of<UserProvider>(context, listen: false).setUserLists(userLists);
-        }
+      if (token != null) {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setToken(token as String?);
         widget.onLoginSuccess();
       } else {
         showDialog(

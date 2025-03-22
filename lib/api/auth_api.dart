@@ -1,24 +1,23 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/user_model.dart';
 import '../utils/constants.dart';
 
 class AuthAPI {
   // Логин пользователя
-  static Future<User?> login(String username, String password) async {
+  static Future<String?> login(String login, String password) async {
     try {
       final response = await http.post(
-          Uri.parse('$apiBaseUrl/user/login'),
-          body: json.encode({"username": username, "password": password}),
-          headers: {"Content-Type": "application/json"}
+        Uri.parse('$authUrl/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({"login": login, "password": password}),
       );
 
-      // Логирование ответа
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
+        final token = json.decode(response.body)['token'];
+        return token;
       } else {
         print('Error: ${response.reasonPhrase}');
         return null;
@@ -30,11 +29,11 @@ class AuthAPI {
   }
 
   // Регистрация пользователя
-  static Future<bool> register(String username, String password, String email) async {
+  static Future<bool> register(String login, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$apiBaseUrl/register'),
-        body: json.encode({"username": username, "password": password, "email": email}),
+        Uri.parse('$authUrl/register'),
+        body: json.encode({"login": login, "password": password}),
         headers: {"Content-Type": "application/json"},
       );
 

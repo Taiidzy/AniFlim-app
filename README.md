@@ -1,16 +1,42 @@
-# aniflim
+# AniFlim
 
-A new Flutter project.
+Добро пожаловать в репозиторий вашего проекта! Этот кроссплатформенный проект предназначен для [краткое описание назначения проекта]. Здесь вы найдете инструкции по установке и запуску приложения на различных платформах: iOS, macOS, Android и Windows. Обратите внимание, что система аккаунтов и список аниме находятся в разработке.
 
-## Getting Started
+## Особенности
 
-This project is a starting point for a Flutter application.
+- **Кроссплатформенность:** Поддержка iOS, macOS, Android и Windows.
+- **Установка на iPhone:** Легко устанавливайте приложение через Xcode.
+- **Установка на macOS:** Запускайте приложение с помощью Seqoia.
+- **Установка на Android:** Готовый APK-файл для прямой загрузки.
+- **Установка на Windows:** Готовый установщик для Windows.
+- **Модули в разработке:**
+  - Система аккаунтов
+  - Список аниме
 
-A few resources to get you started if this is your first Flutter project:
+## Требования
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **macOS:** Рекомендуется использовать последнюю стабильную версию.
+- **Windows:** Windows 10 или выше.
+- **Android:** Устройство с Android 7.0 или новее.
+- **Xcode:** Для сборки и установки приложения на iPhone.
+- **Seqoia:** Для запуска приложения на macOS (инструкции ниже).
+- **Git:** Для клонирования репозитория (если требуется сборка для iOS/macOS).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Установка
+
+### Установка на iPhone через Xcode
+
+1. **Клонируйте репозиторий:**
+
+   ```bash
+   git clone https://github.com/Taiidzy/AniFlim-app.git
+
+2. **Откройте проект в Xcode:**
+    ```bash
+    open aniflim/Runner.xcodeproj
+
+3. **Подключите iOS-устройство к Mac и выберите его в качестве целевого устройства в Xcode.**
+
+4. **Соберите и запустите проект:**
+    Нажмите кнопку Run или используйте сочетание клавиш Command + R для сборки и установки приложения на ваше устройство.
+

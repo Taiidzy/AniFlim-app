@@ -1,16 +1,18 @@
-import 'dart:io'; // Для определения платформы
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // Для Web
-import 'package:desktop_window/desktop_window.dart'; // Для Windows/macOS
-import '../api/anime_api.dart';
-import '../l10n/app_localizations.dart';
-import '../models/anime_model.dart';
-import '../utils/helpers.dart';
-import '../widgets/anime_card.dart';
-import '../widgets/bottom_nav_bar.dart';
-import 'settings_screen.dart';
-import 'search_anime_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'package:AniFlim/screens/search_anime_screen.dart';
+import 'package:AniFlim/screens/settings_screen.dart';
+import 'package:AniFlim/l10n/app_localizations.dart';
+import 'package:AniFlim/widgets/bottom_nav_bar.dart';
+import 'package:AniFlim/models/anime_model.dart';
+import 'package:AniFlim/widgets/anime_card.dart';
+import 'package:AniFlim/utils/resolution.dart';
+import 'package:AniFlim/api/anime_api.dart';
+import 'package:AniFlim/utils/helpers.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,11 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     fetchAnime();
-    _configureWindowSize(); // Настроим размер окна на десктопе
   }
 
   Future<void> fetchAnime() async {
-    print('fetchAnime called');
     const maxRetries = 3; // 1 основная + 2 повторные попытки
     int attempt = 0;
     bool success = false;
@@ -55,12 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
           await Future.delayed(const Duration(seconds: 1));
         }
       }
-    }
-  }
-
-  void _configureWindowSize() async {
-    if (Platform.isMacOS || Platform.isWindows) {
-      await DesktopWindow.setWindowSize(const Size(900, 600));
     }
   }
 
@@ -89,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(localizations.schedule, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: HugeIcon(
@@ -142,8 +137,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: _getGridCount(context),
-                          childAspectRatio: 0.65,
+                          crossAxisCount: Resolution.getGridCount(context),
+                          childAspectRatio: Resolution.getChildAspectRatio(context),
                         ),
                         itemCount: animesForDay.length,
                         itemBuilder: (context, index) {
@@ -157,17 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
       bottomNavigationBar: kIsWeb ? null : const BottomNavBar(currentIndex: 0),
     );
-  }
-
-  int _getGridCount(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    if (Platform.isMacOS || Platform.isWindows) {
-      return width > 1200 ? 4 : 3;
-    } else if (Platform.isAndroid || Platform.isIOS) {
-      return 2;
-    } else {
-      return 2;
-    }
   }
 }
 

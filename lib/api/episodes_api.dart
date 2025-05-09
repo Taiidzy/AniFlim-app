@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/episodes_model.dart';
-import '../utils/constants.dart';
+
+import 'package:AniFlim/models/episodes_model.dart';
+import 'package:AniFlim/utils/constants.dart';
 
 class EpisodesAPI {
   static Future<List<Episode>> fetchAnimeEpisodes(String animeId) async {

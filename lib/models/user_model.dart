@@ -6,9 +6,9 @@ class User {
   final String avatar;
   final int totalTime;
   final int totalEpisode;
-  final List<dynamic> planed;
-  final List<AnimeProgressItem> watching;
-  final List<AnimeProgressItem> watched;
+  final List<ListsModel> planned;
+  final List<ListsModel> watching;
+  final List<ListsModel> watched;
   final List<dynamic> progress;
 
   User({
@@ -17,7 +17,7 @@ class User {
     required this.avatar,
     required this.totalTime,
     required this.totalEpisode,
-    required this.planed,
+    required this.planned,
     required this.watching,
     required this.watched,
     required this.progress,
@@ -30,12 +30,14 @@ class User {
       avatar: json['avatar'],
       totalTime: json['total_time'] ?? 0,
       totalEpisode: json['total_episode'] ?? 0,
-      planed: json['planed'] ?? [],
+      planned: (json['planned'] as List<dynamic>?)
+          ?.map((item) => ListsModel.fromJson(item))
+          .toList() ?? [],
       watching: (json['watching'] as List<dynamic>?)
-          ?.map((item) => AnimeProgressItem.fromJson(item))
+          ?.map((item) => ListsModel.fromJson(item))
           .toList() ?? [],
       watched: (json['watched'] as List<dynamic>?)
-          ?.map((item) => AnimeProgressItem.fromJson(item))
+          ?.map((item) => ListsModel.fromJson(item))
           .toList() ?? [],
       progress: json['progress'] ?? [],
     );

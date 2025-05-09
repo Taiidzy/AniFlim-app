@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../models/anime_model.dart';
-import '../widgets/anime_card.dart';
-import '../api/anime_api.dart';
+
+import 'package:AniFlim/models/anime_model.dart';
+import 'package:AniFlim/widgets/anime_card.dart';
+import 'package:AniFlim/api/anime_api.dart';
 
 class SearchAnime extends SearchDelegate {
 
@@ -52,9 +55,9 @@ class SearchAnime extends SearchDelegate {
         }
         final results = snapshot.data!;
         return GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.65,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _getGridCount(context),
+            childAspectRatio: _getChildAspectRatio(context),
           ),
           itemCount: results.length,
           itemBuilder: (context, index) {
@@ -99,5 +102,30 @@ class SearchAnime extends SearchDelegate {
         );
       },
     );
+  }
+
+  int _getGridCount(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      if (width > 1600) return 8;
+      if (width > 1200) return 6;
+      if (width > 900) return 5;
+      return 4;
+    } else {
+      return width > 600 ? 3 : 2;
+    }
+  }
+
+  double _getChildAspectRatio(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+
+    if (Platform.isMacOS || Platform.isWindows) {
+      return 0.65; // Увеличим карточки на ПК
+    } else if (width > 400) {
+      return 0.65; // Для планшетов и больших телефонов
+    } else {
+      return 0.55; // Для обычных телефонов
+    }
   }
 }

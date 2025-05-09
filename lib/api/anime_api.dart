@@ -1,31 +1,52 @@
 import 'dart:convert';
+import 'package:brotli/brotli.dart';
 import 'package:http/http.dart' as http;
-import '../models/anime_model.dart';
-import '../models/anime_detail_model.dart';
-import '../utils/constants.dart';
+
+import 'package:AniFlim/models/anime_detail_model.dart';
+import 'package:AniFlim/models/anime_model.dart';
+import 'package:AniFlim/utils/constants.dart';
 
 class AnimeAPI {
   // Получение списка аниме
   static Future<List<Anime>> fetchAnimeList() async {
     final url = '$apiBaseUrl/anime/schedule/week';
     final response = await http.get(Uri.parse(url));
-    
-    print('fetchAnimeList - Ответ: ${response.body}');
 
     if (response.statusCode != 200) {
       print('Ошибка HTTP: ${response.statusCode}');
       throw Exception('HTTP Error ${response.statusCode}');
     }
 
-    final decodedBody = utf8.decode(response.bodyBytes, allowMalformed: true);
-    // Проверка на битые данные
+    String decodedBody;
+    if (response.headers['content-encoding']?.toLowerCase() == 'br') {
+      try {
+        final decompressedBytes = brotli.decode(response.bodyBytes);
+        decodedBody = utf8.decode(decompressedBytes);
+      } catch (e) {
+        print('Ошибка декомпрессии Brotli: $e');
+        throw Exception('Brotli Decompression Error');
+      }
+    } else {
+      decodedBody = utf8.decode(response.bodyBytes);
+    }
+
     if (decodedBody.isEmpty || decodedBody.codeUnits.every((unit) => unit == 0)) {
       throw Exception('Invalid response data');
     }
 
     try {
-      final List<dynamic> decodedResponse = json.decode(decodedBody);
-      return decodedResponse.map((item) => Anime.fromJson(item['release'])).toList();
+      final dynamic jsonData = json.decode(decodedBody);
+
+      // Если сервер возвращает объект, а не массив, адаптируем парсинг
+      if (jsonData is List) {
+        return jsonData.map((item) => Anime.fromJson(item['release'])).toList();
+      } else if (jsonData is Map) {
+        // Предположим, что нужный массив лежит под ключом 'data' или аналогичным
+        final List<dynamic> list = jsonData['data'];
+        return list.map((item) => Anime.fromJson(item['release'])).toList();
+      } else {
+        throw Exception('Unexpected JSON structure');
+      }
     } catch (e) {
       print('Ошибка парсинга: $e');
       throw Exception('JSON Parse Error');
@@ -40,11 +61,35 @@ class AnimeAPI {
         headers: {"Content-Type": "application/json"}
       );
 
-      if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
-        return AnimeDetail.fromJson(json.decode(decodedBody));
+      if (response.statusCode != 200) {
+        throw Exception('HTTP Error ${response.statusCode}');
+      }
+
+      String decodedBody;
+      
+      // Обработка Brotli-сжатия
+      if (response.headers['content-encoding']?.toLowerCase() == 'br') {
+        try {
+          final decompressedBytes = brotli.decode(response.bodyBytes);
+          decodedBody = utf8.decode(decompressedBytes);
+        } catch (e) {
+          print('Ошибка декомпрессии Brotli: $e');
+          throw Exception('Brotli Decompression Error');
+        }
       } else {
-        throw Exception('Failed to load anime detail');
+        decodedBody = utf8.decode(response.bodyBytes);
+      }
+
+      // Проверка валидности данных
+      if (decodedBody.isEmpty || decodedBody.codeUnits.every((unit) => unit == 0)) {
+        throw Exception('Invalid response data');
+      }
+
+      try {
+        return AnimeDetail.fromJson(json.decode(decodedBody));
+      } catch (e) {
+        print('Ошибка парсинга JSON: $e');
+        throw Exception('JSON Parse Error');
       }
     } catch (e) {
       throw Exception('Failed to load anime detail: $e');
@@ -57,11 +102,35 @@ class AnimeAPI {
         Uri.parse('$apiBaseUrl/anime/releases/$animeId'),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['episodes'];
+      if (response.statusCode != 200) {
+        print('Ошибка HTTP: ${response.statusCode}');
+        throw Exception('HTTP Error ${response.statusCode}');
+      }
+
+      String decodedBody;
+      if (response.headers['content-encoding']?.toLowerCase() == 'br') {
+        try {
+          final decompressedBytes = brotli.decode(response.bodyBytes);
+          decodedBody = utf8.decode(decompressedBytes);
+        } catch (e) {
+          print('Ошибка декомпрессии Brotli: $e');
+          throw Exception('Brotli Decompression Error');
+        }
       } else {
-        throw Exception('Failed to load episode, status code: ${response.statusCode}');
+        decodedBody = utf8.decode(response.bodyBytes);
+      }
+
+      if (decodedBody.isEmpty || decodedBody.codeUnits.every((unit) => unit == 0)) {
+        throw Exception('Invalid response data');
+      }
+
+      try {
+        final dynamic jsonData = json.decode(decodedBody);
+
+        return jsonData['episodes'];
+      } catch (e) {
+        print('Ошибка парсинга: $e');
+        throw Exception('JSON Parse Error');
       }
     } catch (e) {
       print('Full error details: $e');

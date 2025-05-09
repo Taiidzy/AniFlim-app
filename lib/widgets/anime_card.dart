@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../models/anime_model.dart';
-import '../screens/anime_online_screen.dart';
+
+import 'package:AniFlim/screens/anime_online_screen.dart';
+import 'package:AniFlim/models/anime_model.dart';
+
+import 'package:AniFlim/utils/constants.dart';
 
 class AnimeCard extends StatelessWidget {
   final Anime anime;
@@ -34,28 +36,41 @@ class AnimeCard extends StatelessWidget {
                 topLeft: Radius.circular(12.0),
                 topRight: Radius.circular(12.0),
               ),
-              child: CachedNetworkImage(
-                imageUrl: 'https://anilibria.top${anime.img}',
+              child: Image.network(
+                storageApi + anime.img,
                 fit: BoxFit.cover,
-                height: 250,
+                height: 260,
                 width: double.infinity,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                errorWidget: (context, url, error) => HugeIcon(icon: HugeIcons.strokeRoundedAlert02, color: isDarkTheme ? Colors.white : Colors.black, size: 22.0),
+                filterQuality: FilterQuality.none,
+                loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                },
+                errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                  return HugeIcon(
+                    icon: HugeIcons.strokeRoundedAlert02,
+                    color: isDarkTheme ? Colors.white : Colors.black,
+                    size: 22.0,
+                  );
+                },
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text(
-                anime.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              child: SizedBox(
+                width: double.infinity, // Занимает всю ширину
+                child: Text(
+                  anime.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center, // Теперь будет работать
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
               ),
             ),
           ],

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../api/anime_api.dart';
-import '../l10n/app_localizations.dart';
-import '../models/anime_detail_model.dart';
-import '../widgets/detail_anime.dart';
-import '../widgets/episodes_anime_online.dart';
+
+import 'package:AniFlim/widgets/episodes_anime_online.dart';
+import 'package:AniFlim/models/anime_detail_model.dart';
+import 'package:AniFlim/l10n/app_localizations.dart';
+import 'package:AniFlim/widgets/detail_anime.dart';
+import 'package:AniFlim/api/anime_api.dart';
 
 class AnimeOnlineScreen extends StatefulWidget {
   final String animeId;
@@ -15,8 +16,7 @@ class AnimeOnlineScreen extends StatefulWidget {
   _AnimeOnlineScreenState createState() => _AnimeOnlineScreenState();
 }
 
-class _AnimeOnlineScreenState extends State<AnimeOnlineScreen>
-    with SingleTickerProviderStateMixin {
+class _AnimeOnlineScreenState extends State<AnimeOnlineScreen> with SingleTickerProviderStateMixin {
   late AnimeDetail anime;
   late TabController _tabController;
   bool isLoading = true;
@@ -75,7 +75,7 @@ class _AnimeOnlineScreenState extends State<AnimeOnlineScreen>
         title: Text(anime.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.blueAccent,
+          indicatorColor: Colors.purple,
           tabs: [
             Tab(text: localizations.detail),
             Tab(text: localizations.watch),

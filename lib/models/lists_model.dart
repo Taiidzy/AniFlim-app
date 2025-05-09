@@ -1,11 +1,14 @@
-class AnimeProgressItem {
+class ListsModel {
   final String id;
-  final int episode;
+  final String episode;
 
-  AnimeProgressItem({required this.id, required this.episode});
+  ListsModel({
+    required this.id,
+    required this.episode
+  });
 
-  factory AnimeProgressItem.fromJson(Map<String, dynamic> json) {
-    return AnimeProgressItem(
+  factory ListsModel.fromJson(Map<String, dynamic> json) {
+    return ListsModel(
       id: json['id'],
       episode: json['episode'],
     );

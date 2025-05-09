@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../l10n/app_localizations.dart';
+
+import 'package:AniFlim/l10n/app_localizations.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -26,9 +27,9 @@ class BottomNavBar extends StatelessWidget {
         if (index == 0) {
           Navigator.pushReplacementNamed(context, '/');
         } else if (index == 1) {
-          Navigator.pushReplacementNamed(context, '/development');
+          Navigator.pushReplacementNamed(context, '/profile');
         } else if (index == 2) {
-          Navigator.pushReplacementNamed(context, '/development');
+          Navigator.pushReplacementNamed(context, '/lists');
         }
       },
     );

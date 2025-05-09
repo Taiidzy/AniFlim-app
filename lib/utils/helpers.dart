@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../screens/home_screen.dart';
+
+import 'package:AniFlim/screens/home_screen.dart';
 
 void showErrorDialog(BuildContext context, String message) {
   showDialog(

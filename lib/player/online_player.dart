@@ -2,12 +2,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../api/anime_api.dart';
-import '../l10n/app_localizations.dart';
-import '../providers/locale_provider.dart';
-import '../widgets/player_settings.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart';
+
+import 'package:AniFlim/providers/locale_provider.dart';
+import 'package:AniFlim/providers/user_provider.dart';
+import 'package:AniFlim/widgets/player_settings.dart';
+import 'package:AniFlim/l10n/app_localizations.dart';
+import 'package:AniFlim/player/seekbar.dart';
+import 'package:AniFlim/api/anime_api.dart';
+import 'package:AniFlim/api/user_api.dart';
 
 class EpisodePlayer extends StatefulWidget {
   final String episodeId;
@@ -52,6 +58,7 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
   late int _endingStop;
   String? _currentQuality; // Добавляем для отслеживания текущего качества
   Duration? _lastPosition; // Сохраняем позицию при смене качества
+  int _lastSentSecond = -1;
 
   @override
   void didChangeDependencies() {
@@ -159,15 +166,19 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
 
   Future<void> _initializePlayer() async {
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+    final prefs = await SharedPreferences.getInstance();
     if (episodeInfo.isEmpty || !episodeInfo.containsKey('hls_480')) return;
 
-    String videoUrl = episodeInfo[localeProvider.quality];
+    String videoUrl = episodeInfo[localeProvider.quality].split('?').first;
+    print(videoUrl);
     int time = _lastPosition?.inSeconds ?? int.parse(_startTime.split('.')[0]);
 
     _controller = VideoPlayerController.network(videoUrl)
       ..initialize().then((_) {
         if (!mounted) return;
-        _controller!.addListener(_updatePlaybackPosition); // Добавляем слушатель
+        _controller!.addListener(_updatePlaybackPosition);
+        final savedVolume = prefs.getDouble('video_volume') ?? 1.0; 
+        _controller!.setVolume(savedVolume);
         setState(() {});
         _controller!.seekTo(Duration(seconds: time)).then((_) {
           if (_lastPosition == null) {
@@ -195,6 +206,22 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
       }
       _autoSkipOpening(currentPosition);
       _marathonMode(currentPosition);
+      _updateTimePosition(currentPosition);
+    }
+  }
+
+  void _updateTimePosition(Duration currentPosition) {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    final token = Provider.of<UserProvider>(context, listen: false).currentToken;
+
+    if (token == null) return;
+
+    final currentSecond = currentPosition.inSeconds;
+    
+    if (_controller!.value.isPlaying && currentSecond != _lastSentSecond) {
+      final int animeId = int.parse(widget.animeId.toString());
+      UserAPI.updateTimeProgress(token, currentSecond, widget.episodeId, animeId);
+      _lastSentSecond = currentSecond;
     }
   }
 
@@ -308,171 +335,229 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    // Определяем, запущено ли приложение на ПК
+    final isDesktop = (defaultTargetPlatform == TargetPlatform.macOS ||
+                      defaultTargetPlatform == TargetPlatform.linux ||
+                      defaultTargetPlatform == TargetPlatform.windows);
     var name = widget.name;
     if (name.length > 25) name = '${name.substring(0, 25)}...';
 
     return Scaffold(
       backgroundColor: isDarkTheme ? Colors.black : Colors.white,
-      body: GestureDetector(
-        onTap: _toggleControls,
-        onDoubleTapDown: (details) {
-          if (_controller == null) return;
-          final screenWidth = MediaQuery.of(context).size.width;
-          final offset = details.globalPosition.dx < screenWidth / 2 
-              ? const Duration(seconds: -5)
-              : const Duration(seconds: 5);
-          _controller!.seekTo(_controller!.value.position + offset);
+      body: MouseRegion(
+        onEnter: (_) {
+          setState(() {
+            _controlsVisible = true;
+          });
+          _resetHideControlsTimer();
         },
-        child: Stack(
-          children: [
-            Center(
-              child: _controller != null && _controller!.value.isInitialized
-                  ? AspectRatio(
-                      aspectRatio: _controller!.value.aspectRatio,
-                      child: VideoPlayer(_controller!),
-                    )
-                  : const Center(child: CircularProgressIndicator()),
-            ),
-            // Оборачиваем слой с контролами в IgnorePointer,
-            // чтобы при скрытии (opacity == 0) нажатия не обрабатывались
-            IgnorePointer(
-              ignoring: !_controlsVisible,
-              child: AnimatedOpacity(
-                opacity: _controlsVisible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.black.withOpacity(0.0)
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      AppBar(
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        title: Center(
-                          child: Text(
-                            '$name | ${localizations.episode}: $_currentOrdinal',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        actions: [
-                          IconButton(
-                            icon: HugeIcon(
-                              icon: HugeIcons.strokeRoundedSettings02,
-                              color: Colors.white,
-                              size: 24.0,
-                            ),
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: isDarkTheme ? Colors.black : Colors.white,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-                                ),
-                                builder: (BuildContext context) {
-                                  return SizedBox(
-                                    height: MediaQuery.of(context).size.height * 0.65,
-                                    child: SettingsMenu(episodeInfo: episodeInfo),
-                                  );
-                                },
-                              );
-                            },
-                          ),
+        onHover: (_) {
+          setState(() {
+            _controlsVisible = true;
+          });
+          _resetHideControlsTimer();
+        },
+        cursor: isDesktop 
+            ? (_controlsVisible ? SystemMouseCursors.basic : SystemMouseCursors.none)
+            : SystemMouseCursors.basic,
+        child: GestureDetector(
+          onTap: _toggleControls,
+          onDoubleTapDown: (details) {
+            if (_controller == null) return;
+            final screenWidth = MediaQuery.of(context).size.width;
+            final offset = details.globalPosition.dx < screenWidth / 2 
+                ? const Duration(seconds: -5)
+                : const Duration(seconds: 5);
+            _controller!.seekTo(_controller!.value.position + offset);
+          },
+          child: Stack(
+            children: [
+              Center(
+                child: _controller != null && _controller!.value.isInitialized
+                    ? AspectRatio(
+                        aspectRatio: _controller!.value.aspectRatio,
+                        child: VideoPlayer(_controller!),
+                      )
+                    : const Center(child: CircularProgressIndicator()),
+              ),
+              // Контролы поверх видео
+              IgnorePointer(
+                ignoring: !_controlsVisible,
+                child: AnimatedOpacity(
+                  opacity: _controlsVisible ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.7),
+                          Colors.black.withOpacity(0.0)
                         ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
-                      Expanded(
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (!_isFirstEpisode)
-                                _buildControlButton(
-                                  icon: HugeIcons.strokeRoundedPrevious,
-                                  onPressed: () => _loadEpisode(_currentOrdinal - 1),
-                                ),
-                              const SizedBox(width: 30),
-                              ValueListenableBuilder<bool>(
-                                valueListenable: _isPlaying,
-                                builder: (context, isPlaying, _) {
-                                  return _buildControlButton(
-                                    icon: isPlaying 
-                                        ? HugeIcons.strokeRoundedPause 
-                                        : HugeIcons.strokeRoundedPlay,
-                                    iconSize: 32,
-                                    onPressed: () {
-                                      if (_controller == null) return;
-                                      if (isPlaying) {
-                                        _controller!.pause();
-                                      } else {
-                                        _controller!.play();
-                                      }
-                                      _isPlaying.value = !isPlaying;
-                                    },
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 30),
-                              if (!_isLastEpisode)
-                                _buildControlButton(
-                                  icon: HugeIcons.strokeRoundedNext,
-                                  onPressed: () => _loadEpisode(_currentOrdinal + 1),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Новая полоска для перемотки (SeekBar)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: _controller != null && _controller!.value.isInitialized
-                            ? SeekBar(
-                                controller: _controller!,
-                                isDarkTheme: isDarkTheme,
-                              )
-                            : const SizedBox(),
-                      ),
-                      // Отображение текущего времени и длительности
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ValueListenableBuilder<Duration>(
-                              valueListenable: _currentPositionNotifier,
-                              builder: (context, value, _) => Text(
-                                _formatDuration(value),
-                                style: const TextStyle(color: Colors.white),
+                    ),
+                    child: Column(
+                      children: [
+                        AppBar(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          title: Center(
+                            child: Text(
+                              '$name | ${localizations.episode}: $_currentOrdinal',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            ValueListenableBuilder<Duration>(
-                              valueListenable: _currentPositionNotifier,
-                              builder: (context, value, _) => Text(
-                                _formatDuration(_controller?.value.duration ?? Duration.zero),
-                                style: const TextStyle(color: Colors.white),
+                          ),
+                          actions: [
+                            IconButton(
+                              icon: HugeIcon(
+                                icon: HugeIcons.strokeRoundedSettings02,
+                                color: Colors.white,
+                                size: 24.0,
                               ),
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: isDarkTheme ? Colors.black : Colors.white,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                                  ),
+                                  builder: (BuildContext context) {
+                                    return SizedBox(
+                                      height: MediaQuery.of(context).size.height * 0.65,
+                                      child: SettingsMenu(episodeInfo: episodeInfo),
+                                    );
+                                  },
+                                );
+                              },
                             ),
                           ],
                         ),
+                        Expanded(
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (!_isFirstEpisode)
+                                  _buildControlButton(
+                                    icon: HugeIcons.strokeRoundedPrevious,
+                                    onPressed: () => _loadEpisode(_currentOrdinal - 1),
+                                  ),
+                                const SizedBox(width: 30),
+                                ValueListenableBuilder<bool>(
+                                  valueListenable: _isPlaying,
+                                  builder: (context, isPlaying, _) {
+                                    return _buildControlButton(
+                                      icon: isPlaying 
+                                          ? HugeIcons.strokeRoundedPause 
+                                          : HugeIcons.strokeRoundedPlay,
+                                      iconSize: 32,
+                                      onPressed: () {
+                                        if (_controller == null) return;
+                                        if (isPlaying) {
+                                          _controller!.pause();
+                                        } else {
+                                          _controller!.play();
+                                        }
+                                        _isPlaying.value = !isPlaying;
+                                      },
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 30),
+                                if (!_isLastEpisode)
+                                  _buildControlButton(
+                                    icon: HugeIcons.strokeRoundedNext,
+                                    onPressed: () => _loadEpisode(_currentOrdinal + 1),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Полоска перемотки
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _controller != null && _controller!.value.isInitialized
+                              ? SeekBar(
+                                  controller: _controller!,
+                                  isDarkTheme: isDarkTheme,
+                                )
+                              : const SizedBox(),
+                        ),
+                        // Отображение текущего времени и длительности
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              ValueListenableBuilder<Duration>(
+                                valueListenable: _currentPositionNotifier,
+                                builder: (context, value, _) => Text(
+                                  _formatDuration(value),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              ValueListenableBuilder<Duration>(
+                                valueListenable: _currentPositionNotifier,
+                                builder: (context, value, _) => Text(
+                                  _formatDuration(_controller?.value.duration ?? Duration.zero),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Регулятор громкости и кнопка "на весь экран" – располагаются слева внизу
+                        
+                        SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (_controlsVisible && isDesktop && _controller != null && _controller!.value.isInitialized)
+              Positioned(
+                bottom: 100,
+                left: 20,
+                child: Container(
+                  width: 210,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(HugeIcons.strokeRoundedVolumeLow, color: Colors.white),
+                      Expanded(
+                        child: Slider(
+                          min: 0.0,
+                          max: 1.0,
+                          value: _controller!.value.volume,
+                          activeColor: Colors.white,
+                          inactiveColor: Colors.grey,
+                          onChanged: (newVolume) {
+                            setState(() {
+                              _controller!.setVolume(newVolume);
+                            });
+                            SharedPreferences.getInstance().then((prefs) {
+                              prefs.setDouble('video_volume', newVolume);
+                            });
+                          },
+                        ),
                       ),
+                      Icon(HugeIcons.strokeRoundedVolumeHigh, color: Colors.white),
                     ],
                   ),
                 ),
               ),
-            ),
-            // Плавающая кнопка для пропуска опенинга
-            if (_skipButtonVisible && _controller != null)
+              // Кнопка "Пропустить", справа внизу
+              if (_skipButtonVisible && _controller != null)
               Positioned(
                 bottom: 100,
                 right: 20,
@@ -487,11 +572,14 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
                   label: Text(localizations.skip, style: const TextStyle(color: Colors.white)),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+
+
 
   Widget _buildControlButton({required IconData icon, double iconSize = 28, required VoidCallback onPressed}) {
     return Material(
@@ -549,75 +637,6 @@ class VideoControls extends StatelessWidget {
         backgroundColor: isDarkTheme ? Colors.white24 : Colors.black26,
       ),
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-    );
-  }
-}
-
-class SeekBar extends StatefulWidget {
-  final VideoPlayerController controller;
-  final bool isDarkTheme;
-  const SeekBar({super.key, required this.controller, required this.isDarkTheme});
-
-  @override
-  _SeekBarState createState() => _SeekBarState();
-}
-
-class _SeekBarState extends State<SeekBar> {
-  double _currentSliderValue = 0;
-  bool _isDragging = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Инициализируем значение с текущей позиции видео, если оно уже доступно
-    if (widget.controller.value.isInitialized) {
-      _currentSliderValue = widget.controller.value.position.inSeconds.toDouble();
-    }
-    widget.controller.addListener(_updateSlider);
-  }
-  
-  void _updateSlider() {
-    if (!_isDragging && widget.controller.value.isInitialized) {
-      setState(() {
-        _currentSliderValue = widget.controller.value.position.inSeconds.toDouble();
-      });
-    }
-  }
-  
-  @override
-  void dispose() {
-    widget.controller.removeListener(_updateSlider);
-    super.dispose();
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    final duration = widget.controller.value.duration.inSeconds.toDouble();
-    return SliderTheme(
-      data: SliderTheme.of(context).copyWith(
-        activeTrackColor: Colors.redAccent,
-        inactiveTrackColor: widget.isDarkTheme ? Colors.white24 : Colors.black26,
-        thumbColor: Colors.white,
-        overlayColor: Colors.white.withOpacity(0.2),
-        trackHeight: 4.0,
-      ),
-      child: Slider(
-        min: 0,
-        max: duration > 0 ? duration : 1,
-        value: _currentSliderValue.clamp(0, duration),
-        onChanged: (value) {
-          setState(() {
-            _currentSliderValue = value;
-          });
-        },
-        onChangeStart: (value) {
-          _isDragging = true;
-        },
-        onChangeEnd: (value) {
-          _isDragging = false;
-          widget.controller.seekTo(Duration(seconds: value.toInt()));
-        },
-      ),
     );
   }
 }

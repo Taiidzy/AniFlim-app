@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class AppLocalizations {
   final Locale locale;
@@ -58,7 +58,6 @@ class AppLocalizations {
       'lf': 'Login Failed',
       'iup': 'Invalid username or password.',
       'rf': 'Registration Failed',
-      'iupe': 'Invalid username or password or email.',
       'lastanime': 'Last anime',
       'aua': 'An update is available',
       'nv': 'A new version of the app is available. Do you want to upgrade?',
@@ -84,6 +83,21 @@ class AppLocalizations {
       'ageRaiting': 'Age raiting',
       'quality': 'Quality',
       'schedule': 'Schedule',
+      'totalTime': 'Total time',
+      'planned': 'Planned',
+      'episodes': 'Episodes',
+      'pdm': "Passwords don't match",
+      'rememberMe': 'Remember me',
+      'seconds': 'Seconds',
+      'second': 'Second',
+      'secondss': 'Seconds',
+      'minutes': 'Minutes',
+      'minute': 'Minute',
+      'minutess': 'Minutes',
+      'hours': 'Hours',
+      'hour': 'Hour',
+      'hourss': 'Hours',
+      'noItems': 'No items',
     },
     'ru': {
       'title': 'AniFlim',
@@ -128,9 +142,8 @@ class AppLocalizations {
       'autocontinue': 'Авто переключение эпизода',
       'last': 'Последние',
       'lf': 'Ошибка входа',
-      'iup': 'Неверное имя пользователя или пароль.',
       'rf': 'Ошибка регистрации',
-      'iupe': 'Неверное имя пользователя, пароль или адрес электронной почты.',
+      'iup': 'Неверное имя пользователя или пароль.',
       'lastanime': 'Последние аниме',
       'aua': 'Доступно обновление',
       'nv': 'Новая версия приложения доступна. Хотите обновить?',
@@ -156,288 +169,111 @@ class AppLocalizations {
       'ageRaiting': 'Возрастной рейтинг',
       'quality': 'Качество',
       'schedule': 'Расписание',
+      'totalTime': 'Общее время',
+      'planned': 'Запланировано',
+      'episodes': 'Эпизоды',
+      'pdm': 'Пароли не совпадают',
+      'rememberMe': 'Запомнить меня',
+      'seconds': 'Секунд',
+      'second': 'Секунда',
+      'secondss': 'Секунды',
+      'minutes': 'Минут',
+      'minute': 'Минута',
+      'minutess': 'Минуты',
+      'hours': 'Часов',
+      'hour': 'Час',
+      'hourss': 'Часа',
+      'noItems': 'Нет элементов',
     },
   };
 
-  String get title {
-    return _localizedValues[locale.languageCode]!['title']!;
-  }
+  String _t(String key) => _localizedValues[locale.languageCode]![key]!;
+
+  String get title => _t('title');
+  String get settings => _t('settings');
+  String get darkTheme => _t('darkTheme');
+  String get language => _t('language');
+  String get detail => _t('detail');
+  String get watch => _t('watch');
+  String get animelists => _t('animelists');
+  String get watched => _t('watched');
+  String get watching => _t('watching');
+  String get home => _t('home');
+  String get profile => _t('profile');
+  String get myprofile => _t('myprofile');
+  String get lists => _t('lists');
+  String get episode => _t('episode');
+  String get changepassword => _t('changepassword');
+  String get changeavatar => _t('changeavatar');
+  String get logout => _t('logout');
+  String get registration => _t('registration');
+  String get login => _t('login');
+  String get enl => _t('enl');
+  String get email => _t('email');
+  String get ene => _t('ene');
+  String get password => _t('password');
+  String get enp => _t('enp');
+  String get register => _t('register');
+  String get style => _t('style');
+  String get logIn => _t('logIn');
+  String get skip => _t('skip');
+  String get outin => _t('outin');
+  String get description => _t('description');
+  String get status => _t('status');
+  String get genres => _t('genres');
+  String get studio => _t('studio');
+  String get addtolist => _t('addtolist');
+  String get removefromlist => _t('removefromlist');
+  String get continueWatch => _t('continueWatch');
+  String get no => _t('no');
+  String get continueWatching => _t('continueWatching');
+  String get ecp => _t('ecp');
+  String get autocontinue => _t('autocontinue');
+  String get last => _t('last');
+  String get lf => _t('lf');
+  String get rf => _t('rf');
+  String get iup => _t('iup');
+  String get lastanime => _t('lastanime');
+  String get aua => _t('aua');
+  String get nv => _t('nv');
+  String get yes => _t('yes');
+  String get all_watching => _t('all_watching');
+  String get all_watched => _t('all_watched');
+  String get codecSettings => _t('codecSettings');
+  String get enableHEVC => _t('enableHEVC');
+  String get hevcNotSupported => _t('hevcNotSupported');
+  String get voiceover => _t('voiceover');
+  String get downloadedanime => _t('downloadedanime');
+  String get downloadinganime => _t('downloadinganime');
+  String get downloading => _t('downloading');
+  String get canceldownload => _t('canceldownload');
+  String get unarchive => _t('unarchive');
+  String get notification => _t('notification');
+  String get globalSettings => _t('globalSettings');
+  String get playerSettings => _t('playerSettings');
+  String get marathonMode => _t('marathonMode');
+  String get autoSkipOpening => _t('autoSkipOpening');
+  String get searchEpisode => _t('searchEpisode');
+  String get enterEpisodeNumber => _t('enterEpisodeNumber');
+  String get ageRaiting => _t('ageRaiting');
+  String get quality => _t('quality');
+  String get schedule => _t('schedule');
+  String get totalTime => _t('totalTime');
+  String get planned => _t('planned');
+  String get episodes => _t('episodes');
+  String get pdm => _t('pdm');
+  String get rememberMe => _t('rememberMe');
+  String get seconds => _t('seconds');
+  String get second => _t('second');
+  String get secondss => _t('secondss');
+  String get minutes => _t('minutes');
+  String get minute => _t('minute');
+  String get minutess => _t('minutess');
+  String get hours => _t('hours');
+  String get hour => _t('hour');
+  String get hourss => _t('hourss');
+  String get noItems => _t('noItems');
 
-  String get settings {
-    return _localizedValues[locale.languageCode]!['settings']!;
-  }
-
-  String get darkTheme {
-    return _localizedValues[locale.languageCode]!['darkTheme']!;
-  }
-
-  String get language {
-    return _localizedValues[locale.languageCode]!['language']!;
-  }
-
-  String get detail {
-    return _localizedValues[locale.languageCode]!['detail']!;
-  }
-
-  String get watch {
-    return _localizedValues[locale.languageCode]!['watch']!;
-  }
-
-  String get animelists {
-    return _localizedValues[locale.languageCode]!['animelists']!;
-  }
-
-  String get watched {
-    return _localizedValues[locale.languageCode]!['watched']!;
-  }
-
-  String get watching {
-    return _localizedValues[locale.languageCode]!['watching']!;
-  }
-
-  String get home {
-    return _localizedValues[locale.languageCode]!['home']!;
-  }
-
-  String get profile {
-    return _localizedValues[locale.languageCode]!['profile']!;
-  }
-
-  String get myprofile {
-    return _localizedValues[locale.languageCode]!['myprofile']!;
-  }
-
-  String get lists {
-    return _localizedValues[locale.languageCode]!['lists']!;
-  }
-
-  String get episode {
-    return _localizedValues[locale.languageCode]!['episode']!;
-  }
-
-  String get changepassword {
-    return _localizedValues[locale.languageCode]!['changepassword']!;
-  }
-
-  String get changeavatar {
-    return _localizedValues[locale.languageCode]!['changeavatar']!;
-  }
-
-  String get logout {
-    return _localizedValues[locale.languageCode]!['logout']!;
-  }
-
-  String get registration {
-    return _localizedValues[locale.languageCode]!['registration']!;
-  }
-
-  String get login {
-    return _localizedValues[locale.languageCode]!['login']!;
-  }
-
-  String get enl {
-    return _localizedValues[locale.languageCode]!['enl']!;
-  }
-
-  String get email {
-    return _localizedValues[locale.languageCode]!['email']!;
-  }
-
-  String get ene {
-    return _localizedValues[locale.languageCode]!['ene']!;
-  }
-
-  String get password {
-    return _localizedValues[locale.languageCode]!['password']!;
-  }
-
-  String get enp {
-    return _localizedValues[locale.languageCode]!['enp']!;
-  }
-
-  String get register {
-    return _localizedValues[locale.languageCode]!['register']!;
-  }
-
-  String get style {
-    return _localizedValues[locale.languageCode]!['style']!;
-  }
-
-  String get logIn {
-    return _localizedValues[locale.languageCode]!['logIn']!;
-  }
-
-  String get skip {
-    return _localizedValues[locale.languageCode]!['skip']!;
-  }
-
-  String get outin {
-    return _localizedValues[locale.languageCode]!['outin']!;
-  }
-
-  String get description {
-    return _localizedValues[locale.languageCode]!['description']!;
-  }
-
-  String get status {
-    return _localizedValues[locale.languageCode]!['status']!;
-  }
-
-  String get genres {
-    return _localizedValues[locale.languageCode]!['genres']!;
-  }
-
-  String get studio {
-    return _localizedValues[locale.languageCode]!['studio']!;
-  }
-
-  String get addtolist {
-    return _localizedValues[locale.languageCode]!['addtolist']!;
-  }
-
-  String get removefromlist {
-    return _localizedValues[locale.languageCode]!['removefromlist']!;
-  }
-
-  String get continueWatch {
-    return _localizedValues[locale.languageCode]!['continueWatch']!;
-  }
-
-  String get no {
-    return _localizedValues[locale.languageCode]!['no']!;
-  }
-
-  String get continueWatching {
-    return _localizedValues[locale.languageCode]!['continueWatching']!;
-  }
-
-  String get ecp {
-    return _localizedValues[locale.languageCode]!['ecp']!;
-  }
-
-  String get autocontinue {
-    return _localizedValues[locale.languageCode]!['autocontinue']!;
-  }
-
-  String get last {
-    return _localizedValues[locale.languageCode]!['last']!;
-  }
-
-  String get lf {
-    return _localizedValues[locale.languageCode]!['lf']!;
-  }
-
-  String get iup {
-    return _localizedValues[locale.languageCode]!['iup']!;
-  }
-
-  String get rf {
-    return _localizedValues[locale.languageCode]!['rf']!;
-  }
-
-  String get iupe {
-    return _localizedValues[locale.languageCode]!['iupe']!;
-  }
-
-  String get lastanime {
-    return _localizedValues[locale.languageCode]!['lastanime']!;
-  }
-
-  String get aua {
-    return _localizedValues[locale.languageCode]!['aua']!;
-  }
-
-  String get nv {
-    return _localizedValues[locale.languageCode]!['nv']!;
-  }
-
-  String get yes {
-    return _localizedValues[locale.languageCode]!['yes']!;
-  }
-
-  String get all_watching {
-    return _localizedValues[locale.languageCode]!['all_watching']!;
-  }
-
-  String get all_watched {
-    return _localizedValues[locale.languageCode]!['all_watched']!;
-  }
-
-  String get codecSettings {
-    return _localizedValues[locale.languageCode]!['codecSettings']!;
-  }
-
-  String get enableHEVC {
-    return _localizedValues[locale.languageCode]!['enableHEVC']!;
-  }
-
-  String get hevcNotSupported {
-    return _localizedValues[locale.languageCode]!['hevcNotSupported']!;
-  }
-
-  String get voiceover {
-    return _localizedValues[locale.languageCode]!['voiceover']!;
-  }
-
-  String get downloadedanime {
-    return _localizedValues[locale.languageCode]!['downloadedanime']!;
-  }
-
-  String get downloadinganime {
-    return _localizedValues[locale.languageCode]!['downloadinganime']!;
-  }
-
-  String get downloading {
-    return _localizedValues[locale.languageCode]!['downloading']!;
-  }
-
-  String get canceldownload {
-    return _localizedValues[locale.languageCode]!['canceldownload']!;
-  }
-
-  String get unarchive {
-    return _localizedValues[locale.languageCode]!['unarchive']!;
-  }
-
-  String get notification {
-    return _localizedValues[locale.languageCode]!['notification']!;
-  }
-
-  String get globalSettings {
-    return _localizedValues[locale.languageCode]!['globalSettings']!;
-  }
-
-  String get playerSettings {
-    return _localizedValues[locale.languageCode]!['playerSettings']!;
-  }
-
-  String get marathonMode {
-    return _localizedValues[locale.languageCode]!['marathonMode']!;
-  }
-
-  String get autoSkipOpening {
-    return _localizedValues[locale.languageCode]!['autoSkipOpening']!;
-  }
-
-  String get searchEpisode {
-    return _localizedValues[locale.languageCode]!['searchEpisode']!;
-  }
-
-  String get enterEpisodeNumber {
-    return _localizedValues[locale.languageCode]!['enterEpisodeNumber']!;
-  }
-
-  String get ageRaiting {
-    return _localizedValues[locale.languageCode]!['ageRaiting']!;
-  }
-
-  String get quality {
-    return _localizedValues[locale.languageCode]!['quality']!;
-  }
-
-  String get schedule {
-    return _localizedValues[locale.languageCode]!['schedule']!;
-  }
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

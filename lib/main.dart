@@ -1,23 +1,40 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'l10n/app_localizations.dart';
-import 'models/anime_model.dart';
-import 'providers/locale_provider.dart';
-import 'providers/theme_provider.dart';
-import 'providers/user_provider.dart';
-import 'screens/anime_online_screen.dart';
-import 'screens/development_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/register_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/user_lists.dart';
+import 'package:desktop_window/desktop_window.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:video_player_media_kit/video_player_media_kit.dart';
+
+import 'package:AniFlim/screens/anime_online_screen.dart';
+import 'package:AniFlim/screens/development_screen.dart';
+import 'package:AniFlim/providers/locale_provider.dart';
+import 'package:AniFlim/providers/theme_provider.dart';
+import 'package:AniFlim/providers/user_provider.dart';
+import 'package:AniFlim/screens/register_screen.dart';
+import 'package:AniFlim/screens/settings_screen.dart';
+import 'package:AniFlim/l10n/app_localizations.dart';
+import 'package:AniFlim/screens/profile_screen.dart';
+import 'package:AniFlim/screens/login_screen.dart';
+import 'package:AniFlim/screens/home_screen.dart';
+import 'package:AniFlim/models/anime_model.dart';
+import 'package:AniFlim/screens/user_lists.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  VideoPlayerMediaKit.ensureInitialized(
+    android: true,          // dependency: media_kit_libs_android_video
+    iOS: true,              // dependency: media_kit_libs_ios_video
+    macOS: true,            // dependency: media_kit_libs_macos_video
+    windows: true,          // dependency: media_kit_libs_windows_video
+    linux: true,            // dependency: media_kit_libs_linux
+  );
+  if (!kIsWeb && (Platform.isMacOS || Platform.isWindows)) {
+    await DesktopWindow.setWindowSize(const Size(900, 600));
+  }
   runApp(
     MultiProvider(
       providers: [
@@ -121,10 +138,10 @@ class MyApp extends StatelessWidget {
   }
 
   MaterialPageRoute _buildUserListsRoute(BuildContext context) {
-    final token = Provider.of<UserProvider>(context).currentToken;
+    final token = Provider.of<UserProvider>(context, listen: false).currentToken;
     if (token != null) {
       return MaterialPageRoute(
-        builder: (context) => UserLists(username: token),
+        builder: (context) => UserLists(token: token),
       );
     } else {
       return MaterialPageRoute(

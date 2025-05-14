@@ -1,7 +1,7 @@
 # AniFlim
 
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20macOS%20%7C%20Android%20%7C%20Windows-blue.svg)](https://github.com/Taiidzy/AniFlim-app)
-\[![License](https://img.shields.io/badge/license-MIT-green.svg)]
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 **AniFlim** — это кроссплатформенное приложение для поиска, отслеживания и организации любимых аниме-сериалов и фильмов. Приложение позволяет создавать персональные списки, оставлять отзывы и получать рекомендации на основе ваших предпочтений.
 

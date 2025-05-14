@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:AniFlim/models/anime_detail_model.dart';
 import 'package:AniFlim/models/anime_model.dart';
 import 'package:AniFlim/utils/constants.dart';
+import 'package:AniFlim/models/franchise_model.dart';
 
 class AnimeAPI {
   // Получение списка аниме
@@ -145,6 +146,40 @@ class AnimeAPI {
       return data.map((json) => Anime.fromJson(json)).toList();
     } else {
       throw Exception('Ошибка загрузки данных');
+    }
+  }
+
+  static Future<List<Anime>> fetchRelatedSeasons(String animeId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBaseUrl/anime/franchises/release/$animeId'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Anime.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load related seasons');
+      }
+    } catch (e) {
+      throw Exception('Failed to load related seasons: $e');
+    }
+  }
+
+  Future<List<Franchise>> fetchFranchise(String animeId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBaseUrl/anime/franchises/release/$animeId'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = json.decode(response.body);
+        return jsonData.map((json) => Franchise.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load franchise: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load franchise: $e');
     }
   }
 }

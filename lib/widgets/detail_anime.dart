@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'dart:ui';
 
 import 'package:AniFlim/models/anime_detail_model.dart';
 import 'package:AniFlim/models/status_anime_model.dart';
 import 'package:AniFlim/providers/user_provider.dart';
 import 'package:AniFlim/l10n/app_localizations.dart';
+// import 'package:AniFlim/widgets/quality_dialog.dart';
 import 'package:AniFlim/utils/constants.dart';
 import 'package:AniFlim/api/user_api.dart';
 
@@ -77,115 +79,255 @@ class _DetailAnimeState extends State<DetailAnime> {
     _checkAnimeStatus();
   }
 
+  // void _handleDownload() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return QualityDialog(animeName: widget.anime.name);
+  //     },
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Порог можно регулировать по вашим потребностям
         if (constraints.maxWidth > 800) {
-          // Вид для ПК: изображение слева, информация справа
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Изображение занимает примерно 1/3 ширины
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          storageApi + widget.anime.img,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                        ),
-                      ),
-                      const SizedBox(width: 16.0, height: 16.0),
-                      if (_isStatusLoaded && _animeStatus != null) _buildButtonRow(),
-                    ]
-                  )
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(storageApi + widget.anime.img),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.3),
+                    BlendMode.darken,
+                  ),
                 ),
-                const SizedBox(width: 16.0),
-                // Информация – оставшаяся часть
-                Expanded(
-                  flex: 2,
-                  child: Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        isDarkTheme 
+                          ? Colors.black.withOpacity(0.7)
+                          : Colors.white.withOpacity(0.7),
+                        isDarkTheme 
+                          ? Colors.black.withOpacity(0.5)
+                          : Colors.white.withOpacity(0.5),
+                      ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.anime.name,
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const Divider(),
-                          _buildInfoRow(localizations.voiceover, widget.anime.voiceover),
-                          _buildInfoRow(localizations.outin, widget.anime.releaseDate),
-                          _buildInfoRow(localizations.ageRaiting, widget.anime.ageRaiting),
-                          _buildInfoRow(localizations.studio, 'AniLibria'),
-                          _buildGenres(localizations.genres, widget.anime.genres),
-                          _buildInfoRow(localizations.description, widget.anime.description),
-                          // Если нужна кнопочная панель, можно добавить вызов _buildButtonRow(...)
-                        ],
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: Column(
+                                children: [
+                                  AspectRatio(
+                                    aspectRatio: 2/3,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Image.network(
+                                        storageApi + widget.anime.img,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                      ),
+                                    ),
+                                  ),
+                                  // const SizedBox(height: 16.0),
+                                  // _ListButton(
+                                  //   label: 'Загрузить',
+                                  //   icon: HugeIcons.strokeRoundedDownloadCircle02,
+                                  //   onPressed: _handleDownload,
+                                  // ),
+                                  const SizedBox(height: 16.0),
+                                  if (_isStatusLoaded && _animeStatus != null) 
+                                    ClipRect(
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: isDarkTheme 
+                                              ? Colors.black.withOpacity(0.3)
+                                              : Colors.white.withOpacity(0.3),
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: isDarkTheme 
+                                                ? Colors.white.withOpacity(0.1)
+                                                : Colors.black.withOpacity(0.1),
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: _buildButtonRow(),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16.0),
+                            Expanded(
+                              flex: 2,
+                              child: ClipRect(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: isDarkTheme 
+                                        ? Colors.black.withOpacity(0.3)
+                                        : Colors.white.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isDarkTheme 
+                                          ? Colors.white.withOpacity(0.1)
+                                          : Colors.black.withOpacity(0.1),
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            widget.anime.name,
+                                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                              color: isDarkTheme ? Colors.white : Colors.black87,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                          Divider(color: isDarkTheme ? Colors.white24 : Colors.black12),
+                                          _buildInfoRow(localizations.voiceover, widget.anime.voiceover),
+                                          _buildInfoRow(localizations.outin, widget.anime.releaseDate),
+                                          _buildInfoRow(localizations.ageRaiting, widget.anime.ageRaiting),
+                                          _buildInfoRow(localizations.studio, 'AniLibria'),
+                                          _buildGenres(localizations.genres, widget.anime.genres),
+                                          _buildInfoRow(localizations.description, widget.anime.description),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           );
         } else {
-          // Вид для мобильных устройств – оригинальный Column
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    'https://anilibria.top${widget.anime.img}',
-                    fit: BoxFit.cover,
-                    width: double.infinity,
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(storageApi + widget.anime.img),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.3),
+                    BlendMode.darken,
                   ),
                 ),
-                const SizedBox(height: 16.0),
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        isDarkTheme 
+                          ? Colors.black.withOpacity(0.7)
+                          : Colors.white.withOpacity(0.7),
+                        isDarkTheme 
+                          ? Colors.black.withOpacity(0.5)
+                          : Colors.white.withOpacity(0.5),
+                      ],
+                    ),
                   ),
-                  child: Padding(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.anime.name,
-                          style: Theme.of(context).textTheme.headlineSmall,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.network(
+                            storageApi + widget.anime.img,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          ),
                         ),
-                        const Divider(),
-                        _buildInfoRow(localizations.voiceover, widget.anime.voiceover),
-                        _buildInfoRow(localizations.outin, widget.anime.releaseDate),
-                        _buildInfoRow(localizations.ageRaiting, widget.anime.ageRaiting),
-                        _buildInfoRow(localizations.studio, 'AniLibria'),
-                        _buildGenres(localizations.genres, widget.anime.genres),
-                        _buildInfoRow(localizations.description, widget.anime.description),
+                        const SizedBox(height: 16.0),
+                        // _ListButton(
+                        //   label: 'Загрузить',
+                        //   icon: Icons.download,
+                        //   onPressed: _handleDownload,
+                        // ),
+                        ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDarkTheme 
+                                  ? Colors.black.withOpacity(0.3)
+                                  : Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isDarkTheme 
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.black.withOpacity(0.1),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.anime.name,
+                                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                        color: isDarkTheme ? Colors.white : Colors.black87,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                    Divider(color: isDarkTheme ? Colors.white24 : Colors.black12),
+                                    _buildInfoRow(localizations.voiceover, widget.anime.voiceover),
+                                    _buildInfoRow(localizations.outin, widget.anime.releaseDate),
+                                    _buildInfoRow(localizations.ageRaiting, widget.anime.ageRaiting),
+                                    _buildInfoRow(localizations.studio, 'AniLibria'),
+                                    _buildGenres(localizations.genres, widget.anime.genres),
+                                    _buildInfoRow(localizations.description, widget.anime.description),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_isStatusLoaded && _animeStatus != null) _buildButtonRow(),
                       ],
                     ),
                   ),
                 ),
-                // Если требуется кнопочная панель, можно ее добавить здесь
-                if (_isStatusLoaded && _animeStatus != null) _buildButtonRow(),
-              ],
+              ),
             ),
           );
         }
@@ -193,25 +335,99 @@ class _DetailAnimeState extends State<DetailAnime> {
     );
   }
 
-
   Widget _buildInfoRow(String label, String value) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: ListTile(
-        title: Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(value),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkTheme 
+                ? Colors.black.withOpacity(0.3)
+                : Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: isDarkTheme 
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.1),
+              ),
+            ),
+            child: ListTile(
+              title: Text(
+                label, 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDarkTheme ? Colors.white70 : Colors.black87,
+                  letterSpacing: 0.5,
+                )
+              ),
+              subtitle: Text(
+                value,
+                style: TextStyle(
+                  color: isDarkTheme ? Colors.white60 : Colors.black54,
+                  letterSpacing: 0.3,
+                )
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildGenres(String label, String genres) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Wrap(
-        spacing: 8.0,
-        children: genres.split(',').map((genre) {
-          return Chip(label: Text(genre.trim()));
-        }).toList(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDarkTheme ? Colors.white70 : Colors.black87,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: genres.split(',').map((genre) {
+              return ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDarkTheme 
+                        ? Colors.black.withOpacity(0.3)
+                        : Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: isDarkTheme 
+                          ? Colors.white.withOpacity(0.1)
+                          : Colors.black.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: Text(
+                        genre.trim(),
+                        style: TextStyle(
+                          color: isDarkTheme ? Colors.white70 : Colors.black87,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -226,6 +442,7 @@ class _DetailAnimeState extends State<DetailAnime> {
       }
       buttons.add(button);
     }
+
     if (_animeStatus!.status == 'not') {
       addButton(
         _ListButton(
@@ -276,7 +493,6 @@ class _DetailAnimeState extends State<DetailAnime> {
       children: buttons,
     );
   }
-
 }
 
 class _ListButton extends StatelessWidget {
@@ -288,19 +504,88 @@ class _ListButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity, // Занимаем всю доступную ширину
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(48), // Фиксируем минимальную высоту
-          shape: RoundedRectangleBorder(
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkTheme 
+              ? Colors.black.withOpacity(0.3)
+              : Colors.white.withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDarkTheme 
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.1),
+            ),
+          ),
+          child: ElevatedButton.icon(
+            onPressed: onPressed,
+            icon: Icon(icon),
+            label: Text(label),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: isDarkTheme ? Colors.white : Colors.black87,
+              minimumSize: const Size.fromHeight(48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 }
+
+// class _QualityButton extends StatelessWidget {
+//   final String quality;
+//   final VoidCallback onPressed;
+
+//   const _QualityButton({
+//     required this.quality,
+//     required this.onPressed,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+//     return ClipRect(
+//       child: BackdropFilter(
+//         filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+//         child: Container(
+//           decoration: BoxDecoration(
+//             color: isDarkTheme 
+//               ? Colors.black.withOpacity(0.3)
+//               : Colors.white.withOpacity(0.3),
+//             borderRadius: BorderRadius.circular(12),
+//             border: Border.all(
+//               color: isDarkTheme 
+//                 ? Colors.white.withOpacity(0.1)
+//                 : Colors.black.withOpacity(0.1),
+//             ),
+//           ),
+//           child: ElevatedButton(
+//             onPressed: onPressed,
+//             style: ElevatedButton.styleFrom(
+//               backgroundColor: Colors.transparent,
+//               foregroundColor: isDarkTheme ? Colors.white : Colors.black87,
+//               minimumSize: const Size.fromHeight(48),
+//               shape: RoundedRectangleBorder(
+//                 borderRadius: BorderRadius.circular(12),
+//               ),
+//             ),
+//             child: Text(
+//               quality,
+//               style: const TextStyle(
+//                 fontSize: 16,
+//                 fontWeight: FontWeight.w500,
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }

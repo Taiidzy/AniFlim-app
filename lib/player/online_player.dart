@@ -4,8 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
+import 'package:desktop_window/desktop_window.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:AniFlim/providers/locale_provider.dart';
 import 'package:AniFlim/providers/user_provider.dart';
@@ -59,6 +60,7 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
   String? _currentQuality; // Добавляем для отслеживания текущего качества
   Duration? _lastPosition; // Сохраняем позицию при смене качества
   int _lastSentSecond = -1;
+  bool _isFullScreen = false;
 
   @override
   void didChangeDependencies() {
@@ -69,6 +71,10 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
       _currentQuality = localeProvider.quality;
       _lastPosition = _controller?.value.position;
       _loadEpisode(_currentOrdinal);
+    }
+
+    if (_controller != null && _controller!.value.isInitialized) {
+      _controller!.setPlaybackSpeed(localeProvider.playbackSpeed);
     }
   }
 
@@ -173,21 +179,71 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
     print(videoUrl);
     int time = _lastPosition?.inSeconds ?? int.parse(_startTime.split('.')[0]);
 
-    _controller = VideoPlayerController.network(videoUrl)
-      ..initialize().then((_) {
-        if (!mounted) return;
-        _controller!.addListener(_updatePlaybackPosition);
-        final savedVolume = prefs.getDouble('video_volume') ?? 1.0; 
-        _controller!.setVolume(savedVolume);
-        setState(() {});
-        _controller!.seekTo(Duration(seconds: time)).then((_) {
-          if (_lastPosition == null) {
-            _controller!.play();
-            _isPlaying.value = true;
-          }
-          _startPlaybackPositionTimer();
-        });
+    try {
+      _controller = VideoPlayerController.network(videoUrl);
+      
+      // Добавляем обработчик ошибок
+      _controller!.addListener(() {
+        if (_controller!.value.hasError) {
+          print('Ошибка видеоплеера: ${_controller!.value.errorDescription}');
+          _reinitializePlayer();
+        }
       });
+
+      await _controller!.initialize();
+      
+      if (!mounted) return;
+      
+      _controller!.addListener(_updatePlaybackPosition);
+      final savedVolume = prefs.getDouble('video_volume') ?? 1.0; 
+      _controller!.setVolume(savedVolume);
+      
+      setState(() {});
+      
+      await _controller!.seekTo(Duration(seconds: time));
+      
+      if (_lastPosition == null) {
+        await _controller!.play();
+        _isPlaying.value = true;
+      }
+      
+      _startPlaybackPositionTimer();
+    } catch (e) {
+      print('Ошибка при инициализации плеера: $e');
+      _reinitializePlayer();
+    }
+  }
+
+  Future<void> _reinitializePlayer() async {
+    if (_controller != null) {
+      await _controller!.dispose();
+      _controller = null;
+    }
+    
+    if (mounted) {
+      setState(() {});
+      await Future.delayed(const Duration(seconds: 1));
+      await _initializePlayer();
+    }
+  }
+
+  void _togglePlayPause() async {
+    if (_controller == null || !_controller!.value.isInitialized) {
+      await _reinitializePlayer();
+      return;
+    }
+
+    try {
+      if (_isPlaying.value) {
+        await _controller!.pause();
+      } else {
+        await _controller!.play();
+      }
+      _isPlaying.value = !_isPlaying.value;
+    } catch (e) {
+      print('Ошибка при переключении воспроизведения: $e');
+      await _reinitializePlayer();
+    }
   }
 
   void _updatePlaybackPosition() {
@@ -302,6 +358,11 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
     _resetHideControlsTimer();
   }
 
+  Future<void> _toggleFullScreen() async {
+    _isFullScreen = !_isFullScreen;
+    await DesktopWindow.toggleFullScreen();
+  }
+
   void _startHideControlsTimer() {
     _hideControlsTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) setState(() => _controlsVisible = false);
@@ -335,10 +396,7 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
-    // Определяем, запущено ли приложение на ПК
-    final isDesktop = (defaultTargetPlatform == TargetPlatform.macOS ||
-                      defaultTargetPlatform == TargetPlatform.linux ||
-                      defaultTargetPlatform == TargetPlatform.windows);
+    final isDesktop = (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.windows);
     var name = widget.name;
     if (name.length > 25) name = '${name.substring(0, 25)}...';
 
@@ -372,7 +430,7 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
           },
           child: Stack(
             children: [
-              Center(
+              Positioned.fill(
                 child: _controller != null && _controller!.value.isInitialized
                     ? AspectRatio(
                         aspectRatio: _controller!.value.aspectRatio,
@@ -457,15 +515,7 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
                                           ? HugeIcons.strokeRoundedPause 
                                           : HugeIcons.strokeRoundedPlay,
                                       iconSize: 32,
-                                      onPressed: () {
-                                        if (_controller == null) return;
-                                        if (isPlaying) {
-                                          _controller!.pause();
-                                        } else {
-                                          _controller!.play();
-                                        }
-                                        _isPlaying.value = !isPlaying;
-                                      },
+                                      onPressed: _togglePlayPause,
                                     );
                                   },
                                 ),
@@ -526,32 +576,46 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
                 left: 20,
                 child: Container(
                   width: 210,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(HugeIcons.strokeRoundedVolumeLow, color: Colors.white),
+                      Icon(HugeIcons.strokeRoundedVolumeLow, color: Colors.white, size: 20),
                       Expanded(
-                        child: Slider(
-                          min: 0.0,
-                          max: 1.0,
-                          value: _controller!.value.volume,
-                          activeColor: Colors.white,
-                          inactiveColor: Colors.grey,
-                          onChanged: (newVolume) {
-                            setState(() {
-                              _controller!.setVolume(newVolume);
-                            });
-                            SharedPreferences.getInstance().then((prefs) {
-                              prefs.setDouble('video_volume', newVolume);
-                            });
-                          },
+                        child: SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 2.0,
+                            thumbColor: Colors.white,
+                            overlayColor: Colors.white.withOpacity(0.2),
+                            activeTrackColor: Colors.redAccent,
+                            inactiveTrackColor: Colors.white.withOpacity(0.3),
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6.0,
+                              elevation: 0.0,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 8.0,
+                            ),
+                          ),
+                          child: Slider(
+                            min: 0.0,
+                            max: 1.0,
+                            value: _controller!.value.volume,
+                            onChanged: (newVolume) {
+                              setState(() {
+                                _controller!.setVolume(newVolume);
+                              });
+                              SharedPreferences.getInstance().then((prefs) {
+                                prefs.setDouble('video_volume', newVolume);
+                              });
+                            },
+                          ),
                         ),
                       ),
-                      Icon(HugeIcons.strokeRoundedVolumeHigh, color: Colors.white),
+                      Icon(HugeIcons.strokeRoundedVolumeHigh, color: Colors.white, size: 20),
                     ],
                   ),
                 ),
@@ -572,14 +636,26 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
                   label: Text(localizations.skip, style: const TextStyle(color: Colors.white)),
                 ),
               ),
+              if (isDesktop && _controller != null)
+              Positioned(
+                bottom: 100,
+                right: 20,
+                child: IconButton(
+                  icon: HugeIcon(
+                    icon: _isFullScreen ? HugeIcons.strokeRoundedSquareArrowShrink02 : HugeIcons.strokeRoundedSquareArrowExpand01,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  tooltip: _isFullScreen ? 'Выйти из полноэкранного' : 'Полноэкранный',
+                  onPressed: _toggleFullScreen,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
-
-
 
   Widget _buildControlButton({required IconData icon, double iconSize = 28, required VoidCallback onPressed}) {
     return Material(
@@ -588,22 +664,14 @@ class _EpisodePlayerState extends State<EpisodePlayer> {
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.5),
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              offset: const Offset(2, 2),
-              blurRadius: 4,
-            ),
-          ],
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(100), // Круговой радиус
+          customBorder: const CircleBorder(),
           onTap: onPressed,
           child: Container(
-            padding: const EdgeInsets.all(10), // Отступы для кликабельной области
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-            ),
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
             child: HugeIcon(
               icon: icon,
               color: Colors.white,

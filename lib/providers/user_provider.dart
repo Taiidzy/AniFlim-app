@@ -13,10 +13,10 @@ class UserProvider with ChangeNotifier {
   User? get currentUser => _currentUser;
 
   UserProvider() {
-    _loadToken();
+    loadToken();
   }
 
-  Future<void> _loadToken() async {
+  Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     _cachedToken = prefs.getString('token');
     notifyListeners();

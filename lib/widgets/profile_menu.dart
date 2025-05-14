@@ -62,21 +62,59 @@ class _ProfileMenuState extends State<ProfileMenu> {
 
   Widget _buildStatColumn(String label, String value, IconData icon) {
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: isDarkTheme ? Colors.white : Colors.black, size: 28),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDarkTheme 
+              ? Colors.black.withOpacity(0.3)
+              : Colors.white.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDarkTheme 
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.1),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isDarkTheme ? Colors.white70 : Colors.black87,
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkTheme ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDarkTheme ? Colors.white70 : Colors.black54,
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(fontSize: 14, color: isDarkTheme ? Colors.white : Colors.black),
-        ),
-      ],
+      ),
     );
   }
 
@@ -105,107 +143,159 @@ class _ProfileMenuState extends State<ProfileMenu> {
             child: Column(
               children: [
                 SizedBox(
-                  height: 250,
+                  height: 300,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Фоновая картинка
-                      Positioned.fill(
-                        child: Image.network(
-                          'https://pic.rutubelist.ru/video/2024-10-08/01/da/01daee6107408babfd3c400d734f36ec.jpg',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      // Затемнение фона
-                      Positioned.fill(
+                      // Аватар
+                      Positioned(
+                        top: 40,
                         child: Container(
-                          color: Colors.black.withOpacity(0.3),
-                        ),
-                      ),
-                      // Блюр для плавного перехода
-                      Positioned.fill(
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                          child: Container(
-                            color: Colors.black.withOpacity(0.2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 65,
+                            backgroundColor: isDarkTheme 
+                              ? Colors.black.withOpacity(0.3)
+                              : Colors.white.withOpacity(0.3),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: isDarkTheme 
+                                ? Colors.black.withOpacity(0.3)
+                                : Colors.white.withOpacity(0.3),
+                              child: CircleAvatar(
+                                radius: 55,
+                                backgroundImage: NetworkImage(
+                                  user.avatar.isNotEmpty
+                                      ? 'http://178.173.82.2:5020/user/avatar/${user.login}'
+                                      : 'http://178.173.82.2:5020/static/avatars/default.png',
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                       // Имя пользователя
                       Positioned(
-                        top: 80,
-                        child: Text(
-                          user.login,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkTheme ? Colors.white : Colors.black,
+                        top: 180,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isDarkTheme 
+                                  ? Colors.black.withOpacity(0.3)
+                                  : Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isDarkTheme 
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.black.withOpacity(0.1),
+                                ),
+                              ),
+                              child: Text(
+                                user.login,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                      // Аватар по центру шапки
-                      Positioned(
-                        top: 120,
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.white,
-                          backgroundImage: NetworkImage(
-                            user.avatar.isNotEmpty
-                                ? 'http://178.173.82.2:5020/user/avatar/${user.login}'
-                                : 'http://178.173.82.2:5020/static/avatars/default.png',
-                          ),
-                        ),
-                      ),
-                      // Кнопка выхода (слева сверху)
+                      // Кнопки управления
                       Positioned(
                         top: 16,
                         left: 16,
-                        child: IconButton(
-                          icon: Icon(Icons.logout, color: isDarkTheme ? Colors.white : Colors.black),
-                          onPressed: widget.onLogout,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDarkTheme 
+                                  ? Colors.black.withOpacity(0.3)
+                                  : Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: isDarkTheme 
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.black.withOpacity(0.1),
+                                ),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.logout, color: Colors.white),
+                                onPressed: widget.onLogout,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      // Кнопка изменения аватара (справа сверху)
                       Positioned(
                         top: 16,
                         right: 16,
-                        child: IconButton(
-                          icon: Icon(HugeIcons.strokeRoundedUserEdit01, color: isDarkTheme ? Colors.white : Colors.black),
-                          onPressed: () => _changeAvatar(user),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDarkTheme 
+                                  ? Colors.black.withOpacity(0.3)
+                                  : Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: isDarkTheme 
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.black.withOpacity(0.1),
+                                ),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(HugeIcons.strokeRoundedUserEdit01, color: Colors.white),
+                                onPressed: () => _changeAvatar(user),
+                              ),
+                            ),
+                          ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 70),
+                const SizedBox(height: 40),
                 // Статистика пользователя
-                Card(
-                  elevation: 8,
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 20,
-                          runSpacing: 10,
-                          children: [
-                            _buildStatColumn(localizations.totalTime, calculateTotalTime(user.totalTime, context), HugeIcons.strokeRoundedTimeSchedule),
-                            _buildStatColumn(localizations.episodes, user.totalEpisode.toString(), HugeIcons.strokeRoundedFilm01),
-                            _buildStatColumn(localizations.planned, user.planned.length.toString(), HugeIcons.strokeRoundedLeftToRightListBullet),
-                            _buildStatColumn(localizations.watching, user.watching.length.toString(), HugeIcons.strokeRoundedTextCheck),
-                            _buildStatColumn(localizations.watched, user.watched.length.toString(), HugeIcons.strokeRoundedPlayList),
-                          ],
-                        ),
-                      ],
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          _buildStatColumn(localizations.totalTime, calculateTotalTime(user.totalTime, context), HugeIcons.strokeRoundedTimeSchedule),
+                          _buildStatColumn(localizations.episodes, user.totalEpisode.toString(), HugeIcons.strokeRoundedFilm01),
+                          _buildStatColumn(localizations.planned, user.planned.length.toString(), HugeIcons.strokeRoundedLeftToRightListBullet),
+                          _buildStatColumn(localizations.watching, user.watching.length.toString(), HugeIcons.strokeRoundedTextCheck),
+                          _buildStatColumn(localizations.watched, user.watched.length.toString(), HugeIcons.strokeRoundedPlayList),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
             ),
           );

@@ -98,6 +98,19 @@ class AppLocalizations {
       'hour': 'Hour',
       'hourss': 'Hours',
       'noItems': 'No items',
+      'playbackSpeed': 'Playback speed',
+      'passwordConfirmation': 'Password confirmation',
+      'error': 'Error',
+      'relatedSeasons': 'Related seasons',
+      'franchise': 'Franchise',
+      'years': 'Years',
+      'duration': 'Duration',
+      'seasons': 'Seasons',
+      'noRelatedSeasons': 'No related seasons found',
+      'loadingError': 'Error loading related seasons',
+      'relatedAnime': 'Related anime',
+      'qualityDownload': 'Quality download',
+      'download': 'Download',
     },
     'ru': {
       'title': 'AniFlim',
@@ -184,6 +197,19 @@ class AppLocalizations {
       'hour': 'Час',
       'hourss': 'Часа',
       'noItems': 'Нет элементов',
+      'playbackSpeed': 'Скорость воспроизведения',
+      'passwordConfirmation': 'Подтверждение пароля',
+      'error': 'Ошибка',
+      'relatedSeasons': 'Связанные сезоны',
+      'franchise': 'Фрашиза',
+      'years': 'Годы',
+      'duration': 'Длительность',
+      'seasons': 'Сезоны',
+      'noRelatedSeasons': 'Связанные сезоны не найдены',
+      'loadingError': 'Ошибка загрузки связанных сезонов',
+      'relatedAnime': 'Связанные аниме',
+      'qualityDownload': 'Качество скачивания',
+      'download': 'Скачать',
     },
   };
 
@@ -273,7 +299,19 @@ class AppLocalizations {
   String get hour => _t('hour');
   String get hourss => _t('hourss');
   String get noItems => _t('noItems');
-
+  String get playbackSpeed => _t('playbackSpeed');
+  String get passwordConfirmation => _t('passwordConfirmation');
+  String get error => _t('error');
+  String get relatedSeasons => _t('relatedSeasons');
+  String get franchise => _t('franchise');
+  String get years => _t('years');
+  String get duration => _t('duration');
+  String get seasons => _t('seasons');
+  String get noRelatedSeasons => _t('noRelatedSeasons');
+  String get loadingError => _t('loadingError');
+  String get relatedAnime => _t('relatedAnime');
+  String get qualityDownload => _t('qualityDownload');
+  String get download => _t('download');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

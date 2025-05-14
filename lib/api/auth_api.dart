@@ -31,7 +31,7 @@ class AuthAPI {
   }
 
   // Регистрация пользователя
-  static Future<bool> register(String login, String password) async {
+  static Future<int> register(String login, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$authUrl/register'),
@@ -39,10 +39,15 @@ class AuthAPI {
         headers: {"Content-Type": "application/json"},
       );
 
-      return response.statusCode == 201;
+      // Декодируем ответ от сервера и выводим в консоль
+      final decodedResponse = utf8.decode(response.bodyBytes);
+      print('Response from server: $decodedResponse');
+      print(response.statusCode);
+
+      return response.statusCode;
     } catch (e) {
       print('Exception caught: $e');
-      return false;
+      return 0;
     }
   }
 }

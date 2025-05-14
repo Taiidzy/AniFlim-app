@@ -53,4 +53,22 @@ class Anime {
           : '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': {'main': name},
+      'poster': {'src': img},
+      'year': release,
+      'studio': studio,
+      'description': description,
+      'is_ongoing': status == "Ongoing",
+      'genres': genres.split(', ').map((genre) => {'name': genre}).toList(),
+      'publish_day': {
+        'value': publishDayValue,
+        'description': publishDayDescription,
+      },
+      'age_rating': {'label': ageRaiting},
+    };
+  }
 }

@@ -32,9 +32,14 @@ void main() async {
     windows: true,          // dependency: media_kit_libs_windows_video
     linux: true,            // dependency: media_kit_libs_linux
   );
+  
   if (!kIsWeb && (Platform.isMacOS || Platform.isWindows)) {
     await DesktopWindow.setWindowSize(const Size(900, 600));
   }
+
+  final userProvider = UserProvider();
+  await userProvider.loadToken();
+
   runApp(
     MultiProvider(
       providers: [
@@ -141,7 +146,7 @@ class MyApp extends StatelessWidget {
     final token = Provider.of<UserProvider>(context, listen: false).currentToken;
     if (token != null) {
       return MaterialPageRoute(
-        builder: (context) => UserLists(token: token),
+        builder: (context) => UserListsScreen(token: token),
       );
     } else {
       return MaterialPageRoute(

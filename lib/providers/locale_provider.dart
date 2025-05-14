@@ -7,12 +7,16 @@ class LocaleProvider with ChangeNotifier {
   bool _marathonMode = false;
   bool _autoSkipOpening = false;
   String _quality = 'hls_480';
+  double _playbackSpeed = 1.0;
+  String _qualityDownload = '480p';
 
   Locale get locale => _locale;
   bool get autocontinue => _autocontinue;
   bool get marathonMode => _marathonMode;
   bool get autoSkipOpening => _autoSkipOpening;
   String get quality => _quality;
+  double get playbackSpeed => _playbackSpeed;
+  String get qualityDownload => _qualityDownload;
 
   LocaleProvider() {
     _loadPreferences();
@@ -34,6 +38,10 @@ class LocaleProvider with ChangeNotifier {
 
     _quality = prefs.getString('quality') ?? 'hls_480';
 
+    _playbackSpeed = prefs.getDouble('playbackSpeed') ?? 1.0;
+
+    _qualityDownload = prefs.getString('qualityDownload') ?? '480p';
+
     notifyListeners(); // Уведомляем всех слушателей после загрузки настроек
   }
 
@@ -47,34 +55,36 @@ class LocaleProvider with ChangeNotifier {
   }
 
   // Сохранение и установка авто-продолжения
-  Future<void> setAutocontinue(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('autocontinue', value);
+  void setAutocontinue(bool value) {
     _autocontinue = value;
     notifyListeners();
   }
   
   // Сохранение и установка режима марафона
-  Future<void> setMarathonMode(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('marathonMode', value);
+  void setMarathonMode(bool value) {
     _marathonMode = value;
     notifyListeners();
   }
   
   // Сохранение и установка режима марафона
-  Future<void> setAutoSkipOpening(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('autoSkipOpening', value);
+  void setAutoSkipOpening(bool value) {
     _autoSkipOpening = value;
     notifyListeners();
   }
   
   // Сохранение и установка режима марафона
-  Future<void> setQuality(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('quality', value);
+  void setQuality(String value) {
     _quality = value;
+    notifyListeners();
+  }
+
+  void setPlaybackSpeed(double value) {
+    _playbackSpeed = value;
+    notifyListeners();
+  }
+
+  void setQualityDownload(String value) {
+    _qualityDownload = value;
     notifyListeners();
   }
 }

@@ -52,7 +52,7 @@
 
 ### iOS (iPhone)
 
-### Ручная сборка
+#### Ручная сборка
 
 1. Клонируйте репозиторий:
 
@@ -77,7 +77,7 @@
   2. Через консоль:
   flutter run --release
 
-### AltStore
+#### AltStore
 
 1. Скачайте ipa-файл из [релизов проекта](https://github.com/Taiidzy/AniFlim-app/releases).
 
